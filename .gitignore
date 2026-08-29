@@ -1,0 +1,17 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors / local
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env / secrets (none used yet, keep safe)
+.env
+.env.*
+
+# Logs
+*.log

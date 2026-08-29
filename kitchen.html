@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>บันทึกครัว — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Kitchen Input</h1>
+          <p class="page-sub">แยก Unserved กับ Plate waste ชัดเจน · ดู Waste Rate สดขณะพิมพ์</p>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btn-demo">Load demo day</button>
+          <label class="switch"><input type="checkbox" id="simple-toggle" checked /> Simple Mode</label>
+        </div>
+      </div>
+
+      <div id="warn"></div>
+      <div class="live-preview" id="live" style="margin-bottom:1.25rem"></div>
+
+      <form id="meal-form" class="card">
+        <div class="form-grid form-section">
+          <div>
+            <label for="date">วันที่</label>
+            <input type="date" id="date" required />
+          </div>
+          <div>
+            <label for="menu">ชื่อเมนู</label>
+            <input type="text" id="menu" placeholder="เช่น ข้าวราดแกง" />
+          </div>
+          <div>
+            <label for="diners">จำนวนผู้รับประทาน (Diners)</label>
+            <input type="number" id="diners" min="1" step="1" required />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Prepared Food (kg) <span class="badge badge-input">ผู้ใช้กรอก</span></h3>
+          <div class="cat-inputs" id="prepared-inputs"></div>
+        </div>
+        <div class="form-section">
+          <h3>Unserved Food (kg) — แยกจาก plate waste</h3>
+          <div class="cat-inputs" id="unserved-inputs"></div>
+        </div>
+        <div class="form-section">
+          <h3>Plate Waste (kg)</h3>
+          <div class="cat-inputs" id="plate-inputs"></div>
+        </div>
+        <div class="form-grid form-section">
+          <div>
+            <label for="liquid">Free Liquid (Soup/Gravy) L</label>
+            <input type="number" id="liquid" min="0" step="0.1" value="0" />
+          </div>
+          <div>
+            <label for="plastic">Contamination — Plastic kg</label>
+            <input type="number" id="plastic" min="0" step="0.01" value="0" />
+          </div>
+          <div>
+            <label for="contam-other">Contamination — Other kg</label>
+            <input type="number" id="contam-other" min="0" step="0.01" value="0" />
+          </div>
+          <div>
+            <label for="total-check">ยอดรวมขยะแข็ง (ถ้ามี — สำหรับตรวจมวล)</label>
+            <input type="number" id="total-check" min="0" step="0.01" placeholder="ว่างได้" />
+            <p class="field-hint">ถ้ากรอก จะเตือนเมื่อผลรวมหมวดต่างเกิน 5%</p>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary">บันทึกลง localStorage</button>
+          <a class="btn btn-outline" href="dashboard.html">ไปแดชบอร์ด</a>
+        </div>
+      </form>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("kitchen")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    const cats = FW_DATA.categories;
+
+    function catFields(containerId, prefix) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = cats.map(c => `
+        <div>
+          <label for="${prefix}-${c.key}">${c.labelTh}</label>
+          <input type="number" id="${prefix}-${c.key}" data-cat="${c.key}" data-group="${prefix}" min="0" step="0.01" value="0" />
+        </div>`).join("");
+    }
+    catFields("prepared-inputs", "prepared");
+    catFields("unserved-inputs", "unserved");
+    catFields("plate-inputs", "plate");
+
+    document.getElementById("date").value = FW.todayISO();
+
+    function readGroup(prefix) {
+      const o = {};
+      cats.forEach(c => { o[c.key] = Number(document.getElementById(`${prefix}-${c.key}`).value) || 0; });
+      return o;
+    }
+
+    function fillMeal(meal) {
+      document.getElementById("date").value = meal.date || FW.todayISO();
+      document.getElementById("menu").value = meal.menuName || "";
+      document.getElementById("diners").value = meal.diners || "";
+      cats.forEach(c => {
+        document.getElementById(`prepared-${c.key}`).value = meal.prepared?.[c.key] ?? 0;
+        document.getElementById(`unserved-${c.key}`).value = meal.unserved?.[c.key] ?? 0;
+        document.getElementById(`plate-${c.key}`).value = meal.plateWaste?.[c.key] ?? 0;
+      });
+      document.getElementById("liquid").value = meal.freeLiquidL ?? 0;
+      document.getElementById("plastic").value = meal.contamination?.plastic ?? 0;
+      document.getElementById("contam-other").value = meal.contamination?.other ?? 0;
+      updateLive();
+    }
+
+    function currentMeal() {
+      return {
+        date: document.getElementById("date").value,
+        menuName: document.getElementById("menu").value,
+        diners: Number(document.getElementById("diners").value) || 0,
+        prepared: readGroup("prepared"),
+        unserved: readGroup("unserved"),
+        plateWaste: readGroup("plate"),
+        freeLiquidL: Number(document.getElementById("liquid").value) || 0,
+        contamination: {
+          plastic: Number(document.getElementById("plastic").value) || 0,
+          other: Number(document.getElementById("contam-other").value) || 0,
+        },
+      };
+    }
+
+    function updateLive() {
+      const meal = currentMeal();
+      const a = F.analyzeMealWaste(meal);
+      const totalField = document.getElementById("total-check").value;
+      const warn = FW.massBalanceWarn(a.wasteTotal, totalField === "" ? null : Number(totalField));
+      document.getElementById("warn").innerHTML = warn
+        ? `<div class="banner banner-danger">${warn}</div>` : "";
+      document.getElementById("live").innerHTML = `
+        <div class="lp-item"><span>Waste Rate</span><strong>${meal.prepared && a.preparedTotal ? F.roundDisplay(a.wasteRate,"pct") : "—"}%</strong></div>
+        <div class="lp-item"><span>Waste / Person</span><strong>${a.diners ? Math.round(a.wastePerPerson*1000) : "—"} g</strong></div>
+        <div class="lp-item"><span>Waste total</span><strong>${F.roundDisplay(a.wasteTotal,"kg")} kg</strong></div>
+        <div class="lp-item"><span>Consumed</span><strong>${F.roundDisplay(a.consumed,"kg")} kg</strong></div>
+      `;
+    }
+
+    document.getElementById("meal-form").addEventListener("input", updateLive);
+    document.getElementById("btn-demo").addEventListener("click", () => {
+      const demo = FW.getDemoMeal();
+      fillMeal(demo);
+    });
+
+    document.getElementById("meal-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const meal = currentMeal();
+      if (!meal.diners) { alert("กรุณากรอกจำนวน Diners"); return; }
+      const a = F.analyzeMealWaste(meal);
+      const totalField = document.getElementById("total-check").value;
+      const warn = FW.massBalanceWarn(a.wasteTotal, totalField === "" ? null : Number(totalField));
+      if (warn && !confirm(warn + "\n\nบันทึกต่อหรือไม่?")) return;
+      FW.saveMeal(meal);
+      alert("บันทึกแล้ว — Waste Rate = " + F.roundDisplay(a.wasteRate, "pct") + "%");
+      window.location.href = "dashboard.html";
+    });
+
+    const latest = FW.getLatestMeal();
+    if (latest) fillMeal(latest);
+    else updateLive();
+
+    document.getElementById("simple-toggle").checked = FW.isSimpleMode();
+    document.getElementById("simple-toggle").addEventListener("change", (e) => FW.setSimpleMode(e.target.checked));
+  </script>
+</body>
+</html>

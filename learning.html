@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ศูนย์เรียนรู้ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Learning Center</h1>
+          <p class="page-sub">บทความอ่านง่ายพร้อมแผนภาพ — สำหรับเจ้าหน้าที่ครัวและประชาชน</p>
+        </div>
+      </div>
+
+      <nav class="card" style="margin-bottom:1.5rem">
+        <strong>สารบัญ</strong>
+        <div class="btn-row" style="margin-top:0.75rem">
+          <a class="btn btn-sm btn-outline" href="#what">Food Waste คืออะไร</a>
+          <a class="btn btn-sm btn-outline" href="#ai">AI Pipeline</a>
+          <a class="btn btn-sm btn-outline" href="#compost">Compost basics</a>
+          <a class="btn btn-sm btn-outline" href="#flow">จากขยะถึงดิน</a>
+        </div>
+      </nav>
+
+      <article class="article card" id="what" style="max-width:100%; margin-bottom:1rem">
+        <h2>Food Waste คืออะไร / เกิดจากอะไร / Source Reduction</h2>
+        <p><strong>Food Waste</strong> คืออาหารที่ถูกผลิตหรือเตรียมแล้วแต่ไม่ได้ถูกบริโภคอย่างมีประโยชน์ — ในโรงอาหารมักมาจากสองแหล่งหลัก:</p>
+        <ul>
+          <li><strong>Unserved food</strong> — อาหารที่เตรียมแล้วแต่ไม่ได้นำไปเสิร์ฟ</li>
+          <li><strong>Plate waste</strong> — เศษอาหารที่เหลือบนจานหลังรับประทาน</li>
+        </ul>
+        <p><strong>Source Reduction</strong> คือการลดการสูญเสียตั้งแต่ต้นทาง: วางแผนปริมาณผลิตให้ใกล้กับความต้องการจริง ปรับขนาดเสิร์ฟ และเรียนรู้จากข้อมูลย้อนหลัง ดีกว่าการจัดการขยะหลังเกิดแล้วเพียงอย่างเดียว</p>
+        <div class="diagram">Prepared → Served → Consumed
+         ↘ Unserved          ↘ Plate waste
+                    ↓
+              Solid Food Waste (+ Free liquid / Contamination แยกต่างหาก)</div>
+      </article>
+
+      <article class="article card" id="ai" style="max-width:100%; margin-bottom:1rem">
+        <h2>AI pipeline: จากกล้องถึงชุดข้อมูล kg</h2>
+        <div class="pipeline-steps">
+          <span class="step">Camera</span><span class="arrow">→</span>
+          <span class="step">Detection / Classification</span><span class="arrow">→</span>
+          <span class="step">Food Category</span><span class="arrow">→</span>
+          <span class="step">Estimated Quantity</span><span class="arrow">→</span>
+          <span class="step">kg Dataset</span>
+        </div>
+        <p style="margin-top:1rem">โมเดลมักให้ค่าประมาณ (AI Estimated) — ต้องแยกจากค่าชั่งจริง (Measured) และค่าที่ผู้ใช้กรอก (User Input) เสมอ</p>
+        <div class="diagram">[Image frame]
+   → object boxes (rice / veg / fruit / protein / other)
+   → mass estimate model  →  category kg rows
+   → quality flags: confidence, contamination cues</div>
+      </article>
+
+      <article class="article card" id="compost" style="max-width:100%; margin-bottom:1rem">
+        <h2>Compost: Carbon, Nitrogen, C:N, Moisture, Aeration</h2>
+        <p>จุลินทรีย์ต้องการคาร์บอน (พลังงาน) และไนโตรเจน (สร้างโปรตีน) ในสัดส่วนที่เหมาะสม</p>
+        <ul>
+          <li><strong>C:N</strong> — อัตราส่วนมวลคาร์บอนต่อไนโตรเจนของส่วนแห้ง; เป้าหมายหมักแบบใช้อากาศมักอยู่ราว 25–30 : 1</li>
+          <li><strong>Moisture</strong> — ความชื้นมวล; ช่วงใช้งานทั่วไปประมาณ 45–65% (เป้าหมายละเอียดกว่านั้นตามชนิดกอง)</li>
+          <li><strong>Aeration</strong> — การให้อากาศ โดยการกลับกองหรือโครงสร้างวัสดุ ป้องกันสภาพไร้อากาศที่ทำให้เกิดกลิ่น</li>
+        </ul>
+        <div class="diagram">DM = W × (1 − Moisture)
+C  = DM × Carbon fraction
+N  = DM × Nitrogen fraction
+C:N = ΣC / ΣN
+Mmix = Σ(W × M) / ΣW</div>
+      </article>
+
+      <article class="article card" id="flow" style="max-width:100%">
+        <h2>Food Waste → Analyze → Adjust → Compost → Test → Soil Amendment</h2>
+        <div class="pipeline-steps">
+          <span class="step">Food Waste</span><span class="arrow">→</span>
+          <span class="step">Analyze</span><span class="arrow">→</span>
+          <span class="step">Adjust</span><span class="arrow">→</span>
+          <span class="step">Compost</span><span class="arrow">→</span>
+          <span class="step">Test Finished</span><span class="arrow">→</span>
+          <span class="step">Soil Amendment</span>
+        </div>
+        <div class="banner banner-warn" style="margin-top:1.25rem">
+          <strong>Raw Food Waste ≠ Finished Compost</strong><br />
+          เคมีของขยะดิบบอกได้แค่จุดตั้งต้นว่าต้องปรับอะไร — ไม่ใช่คำแนะนำใส่พืชโดยตรง
+          ต้องหมักจนสุก และทดสอบปุ๋ยหมักสำเร็จรูปก่อนใช้ปรับปรุงดิน
+        </div>
+      </article>
+    </main>
+    <footer class="site-footer">Learning Center · ไม่แนะนำพืชผลจากขยะดิบ</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>FW.initPublicPage("learning");</script>
+</body>
+</html>

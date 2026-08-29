@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>คลังสูตร — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Formula Library</h1>
+          <p class="page-sub">สูตรที่ระบบใช้จริง — ไม่มีตัวเลขถูก hardcode ในหน้าผลลัพธ์</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="expert-toggle" /> Expert Mode (แสดงขั้นตอนแทนค่า)</label>
+      </div>
+
+      <div id="self-check" class="card self-check" style="margin-bottom:1.5rem"></div>
+
+      <h2>Source Reduction</h2>
+      <div class="formula-grid" id="sr-formulas"></div>
+
+      <h2 style="margin-top:2rem">Food Waste Analysis</h2>
+      <div class="formula-grid" id="fa-formulas"></div>
+
+      <h2 style="margin-top:2rem">Optimization (Route 3)</h2>
+      <div class="formula-grid" id="opt-formulas"></div>
+    </main>
+    <footer class="site-footer">Implementations live in js/formulas.js</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    FW.initPublicPage("formulas");
+    const expert = document.getElementById("expert-toggle");
+    expert.checked = FW.isExpertMode();
+    expert.addEventListener("change", () => {
+      FW.setExpertMode(expert.checked);
+      render();
+    });
+
+    const cards = {
+      sr: [
+        { name: "Waste Rate", eq: "Waste / Prepared × 100", input: "Waste kg, Prepared kg", unit: "%", out: "Waste Rate", use: "วัดสัดส่วนอาหารที่เหลือเทียบที่เตรียม", ex: "50 / 235 × 100 = 21.276…% → แสดง 21.3%", src: "Calculated" },
+        { name: "Consumed", eq: "Prepared − Waste", input: "Prepared, Waste", unit: "kg", out: "Consumed", use: "มวลที่ถูกบริโภคโดยประมาณ", ex: "235 − 50 = 185 kg", src: "Calculated" },
+        { name: "Consumption / person", eq: "Consumed / Diners", input: "Consumed, Diners", unit: "kg หรือ g", out: "ต่อคน", use: "ฐานพยากรณ์ความต้องการ", ex: "185 / 500 = 0.370 kg = 370 g", src: "Calculated" },
+        { name: "Waste / person", eq: "Waste / Diners", input: "Waste, Diners", unit: "kg หรือ g", out: "ต่อคน", use: "KPI เปรียบเทียบรายวัน", ex: "50 / 500 = 0.100 kg = 100 g", src: "Calculated" },
+        { name: "Forecast (WMA)", eq: "Σ(w × X) / Σw", input: "ค่า X ย้อนหลัง, น้ำหนัก w", unit: "kg/คน", out: "Forecast", use: "พยากรณ์การบริโภคต่อคน", ex: "weights 1..5 บนประวัติ 5 ค่า", src: "Calculated" },
+        { name: "Recommended Production", eq: "Expected Diners × Forecast × Safety Buffer", input: "Diners, Forecast, Buffer", unit: "kg", out: "Suggested production", use: "แนะนำปริมาณเตรียม (ไม่ใช่คำสั่งตัดทันที)", ex: "buffer ปริยาย 1.08", src: "Estimated" },
+        { name: "Reduction", eq: "Current Production − Recommended Production", input: "Current, Recommended", unit: "kg", out: "Potential reduction", use: "ศักยภาพลดการเตรียมส่วนเกิน", ex: "จากตาราง Route 1", src: "Estimated" },
+        { name: "Recommended Portion", eq: "Recommended Production / Expected Diners", input: "Recommended, Diners", unit: "kg/คน", out: "Suggested portion", use: "ขนาดเสิร์ฟโดยประมาณ", ex: "—", src: "Estimated" },
+        { name: "Waste Reduction %", eq: "(Baseline − New) / Baseline × 100", input: "Baseline waste, New waste", unit: "%", out: "Reduction %", use: "ติดตามผลหลังปรับแผน", ex: "—", src: "Calculated" },
+      ],
+      fa: [
+        { name: "Share", eq: "Wi / Wtotal × 100", input: "Wi, Wtotal", unit: "%", out: "Share", use: "สัดส่วนรายหมวด", ex: "ข้าว 20/50 = 40%", src: "Calculated" },
+        { name: "DM (Dry Matter)", eq: "W × (1 − Moisture)", input: "W, M", unit: "kg", out: "DM", use: "มวลแห้งสำหรับ C/N", ex: "ข้าว 20×0.35 = 7", src: "Calculated" },
+        { name: "Water", eq: "W − DM", input: "W, DM", unit: "kg", out: "Water", use: "มวลน้ำในหมวด", ex: "20 − 7 = 13", src: "Calculated" },
+        { name: "C", eq: "DM × Carbon Fraction", input: "DM, Cfrac", unit: "kg", out: "Carbon", use: "คาร์บอนในส่วนแห้ง", ex: "7 × 0.40 = 2.8", src: "Database Reference" },
+        { name: "N", eq: "DM × Nitrogen Fraction", input: "DM, Nfrac", unit: "kg", out: "Nitrogen", use: "ไนโตรเจนในส่วนแห้ง", ex: "7 × 0.012 = 0.084", src: "Database Reference" },
+        { name: "Ctotal / Ntotal", eq: "ΣC , ΣN", input: "Ci, Ni", unit: "kg", out: "totals", use: "รวมก่อนหา C:N", ex: "จาก demo solid waste", src: "Calculated" },
+        { name: "C:N", eq: "Ctotal / Ntotal", input: "Ctotal, Ntotal", unit: "ratio", out: "C:N", use: "ดัชนีเคมีปุ๋ยหมักดิบ", ex: "คำนวณจาก demo ใน self-check", src: "Calculated" },
+        { name: "Mmix", eq: "Σ(W × M) / ΣW", input: "Wi, Mi", unit: "fraction", out: "Mix moisture", use: "ความชื้นผสมถ่วงน้ำหนัก", ex: "self-check", src: "Calculated" },
+      ],
+      opt: [
+        { name: "Cadded", eq: "X × (1−M) × C", input: "X kg amendment, M, C", unit: "kg", out: "C added", use: "คาร์บอนจากวัสดุเสริม", ex: "grid search Route 3", src: "Calculated" },
+        { name: "Nadded", eq: "X × (1−M) × N", input: "X, M, N", unit: "kg", out: "N added", use: "ไนโตรเจนจากวัสดุเสริม", ex: "grid search Route 3", src: "Calculated" },
+        { name: "CNnew", eq: "(Cfood + ΣCadded) / (Nfood + ΣNadded)", input: "C/N food + adds", unit: "ratio", out: "C:N new", use: "หลังปรับสูตร", ex: "เป้าหมาย 25–30", src: "Predicted" },
+        { name: "Mnew", eq: "(Wfood×Mfood + Σ(X×M)) / (Wfood + ΣX)", input: "มวลและความชื้น", unit: "fraction", out: "M new", use: "ความชื้นหลังผสม", ex: "เป้าหมาย 0.50–0.60", src: "Predicted" },
+        { name: "Cost", eq: "Σ(X × Price/kg)", input: "X, price", unit: "THB", out: "Cost", use: "จัดอันดับส่วนผสมที่ถูกที่สุด", ex: "ราคาใน data.js", src: "Estimated" },
+      ],
+    };
+
+    function cardHtml(f) {
+      const expertOn = FW.isExpertMode();
+      return `<article class="card formula-card">
+        <h3>${f.name} ${FW.badge(f.src)}</h3>
+        <div class="formula-eq">${f.eq}</div>
+        <dl class="formula-meta">
+          <dt>Input</dt><dd>${f.input}</dd>
+          <dt>Unit</dt><dd>${f.unit}</dd>
+          <dt>Output</dt><dd>${f.out}</dd>
+          <dt>ใช้ทำอะไร</dt><dd>${f.use}</dd>
+          <dt>ตัวอย่าง</dt><dd>${f.ex}</dd>
+          ${expertOn ? `<dt>Substitution</dt><dd class="mono">ดู self-check / Route pages สำหรับตัวเลขแทนค่าจริงจากมื้อล่าสุด</dd>` : ""}
+        </dl>
+      </article>`;
+    }
+
+    function render() {
+      document.getElementById("sr-formulas").innerHTML = cards.sr.map(cardHtml).join("");
+      document.getElementById("fa-formulas").innerHTML = cards.fa.map(cardHtml).join("");
+      document.getElementById("opt-formulas").innerHTML = cards.opt.map(cardHtml).join("");
+    }
+    render();
+
+    const result = FW_FORMULAS.runSelfChecks(FW_DATA);
+    const el = document.getElementById("self-check");
+    el.innerHTML = `
+      <h2>Self-check (browser asserts)</h2>
+      <p>รันกับ demo meal + default material properties — สถานะรวม:
+        <span class="${result.allPass ? "check-pass" : "check-fail"}">${result.allPass ? "PASS" : "FAIL"}</span>
+      </p>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Check</th><th>Actual</th><th>Expected</th><th>Status</th></tr></thead>
+        <tbody>
+          ${result.checks.map(c => `<tr>
+            <td>${c.name}</td>
+            <td class="mono">${c.actual}</td>
+            <td class="mono">${c.expected}</td>
+            <td class="${c.pass ? "check-pass" : "check-fail"}">${c.pass ? "PASS" : "FAIL"}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table></div>
+      <p class="caption">เปิด DevTools console แล้วเรียก <code>FW_FORMULAS.runSelfChecks(FW_DATA)</code> ได้เช่นกัน</p>`;
+    console.log("FW self-check", result);
+  </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>แดชบอร์ดสาธารณะ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Public Food Waste Dashboard</h1>
+          <p class="page-sub">ข้อมูลรวมจากโรงเรียนที่เข้าร่วมเท่านั้น — ไม่ระบุโรงเรียน</p>
+        </div>
+        <span class="badge badge-ai">Aggregate only</span>
+      </div>
+
+      <div class="banner banner-info">
+        แดชบอร์ดนี้แสดงค่าเฉลี่ยรวมเท่านั้น ไม่มีชื่อโรงเรียน เมนู หรือข้อมูลครัวรายวัน
+      </div>
+
+      <div class="kpi-grid" id="kpis" style="margin-bottom:1.5rem"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>องค์ประกอบขยะอาหาร (ค่าเฉลี่ย)</h3>
+          <div class="chart-box"><canvas id="chart-donut"></canvas></div>
+          <p class="caption">ค่าเฉลี่ยจากโรงเรียนที่เข้าร่วม ไม่ระบุโรงเรียน</p>
+        </div>
+        <div class="card">
+          <h3>แนวโน้มค่าเฉลี่ย 30 วัน (g/คน)</h3>
+          <div class="chart-box"><canvas id="chart-line"></canvas></div>
+          <p class="caption">ค่าเฉลี่ยจากโรงเรียนที่เข้าร่วม ไม่ระบุโรงเรียน</p>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h3>ขยะตามหมวด (ค่าเฉลี่ย %)</h3>
+        <div class="chart-box"><canvas id="chart-bar"></canvas></div>
+        <p class="caption">ค่าเฉลี่ยจากโรงเรียนที่เข้าร่วม ไม่ระบุโรงเรียน</p>
+      </div>
+    </main>
+    <footer class="site-footer">Public aggregate · Estimated / Calculated labels shown</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    FW.initPublicPage("public");
+    const k = FW_DATA.publicKpis;
+    document.getElementById("kpis").innerHTML = [
+      ["Food Waste Analyzed", k.foodWasteAnalyzedKg.toLocaleString() + " kg"],
+      ["Participating Schools", k.participatingSchools + " แห่ง"],
+      ["Avg Waste / Person", k.avgWastePerPersonG + " g"],
+      ["Diverted", k.foodWasteDivertedKg.toLocaleString() + " kg"],
+    ].map(([l,v]) => `<div class="card kpi"><div class="kpi-label">${l}</div><div class="kpi-value" style="font-size:1.5rem">${v}</div><div class="kpi-meta">ข้อมูลรวม ${FW.badge("Estimated")}</div></div>`).join("");
+
+    const comp = FW_DATA.publicComposition;
+    const colors = FW.chartColors();
+    new Chart(document.getElementById("chart-donut"), {
+      type: "doughnut",
+      data: {
+        labels: comp.map(c => c.labelTh),
+        datasets: [{ data: comp.map(c => c.pct), backgroundColor: colors }],
+      },
+      options: { plugins: { legend: { position: "bottom" } }, maintainAspectRatio: false },
+    });
+    new Chart(document.getElementById("chart-line"), {
+      type: "line",
+      data: {
+        labels: FW_DATA.publicTrend30d.map((_, i) => "D" + (i + 1)),
+        datasets: [{
+          label: "g/คน (เฉลี่ย)",
+          data: FW_DATA.publicTrend30d,
+          borderColor: "#1B5E3B",
+          backgroundColor: "rgba(27,94,59,0.12)",
+          fill: true,
+          tension: 0.3,
+        }],
+      },
+      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: false } } },
+    });
+    new Chart(document.getElementById("chart-bar"), {
+      type: "bar",
+      data: {
+        labels: comp.map(c => c.labelTh),
+        datasets: [{ label: "%", data: comp.map(c => c.pct), backgroundColor: colors }],
+      },
+      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false },
+    });
+  </script>
+</body>
+</html>

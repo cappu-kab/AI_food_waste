@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>วิธีการทำงาน — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main article">
+      <h1>How It Works</h1>
+      <p>ระบบต้นแบบแยกข้อมูลสาธารณะออกจากข้อมูลโรงเรียน และคำนวณด้วยสูตรที่ตรวจสอบได้ ไม่ใช้ข้อความ LLM แทนตัวเลข</p>
+
+      <h2>1. เก็บข้อมูลครัว</h2>
+      <p>เจ้าหน้าที่กรอกอาหารที่เตรียม อาหารที่ไม่เสิร์ฟ และเศษอาหารบนจานแยกกัน รวมถึงของเหลวอิสระและการปนเปื้อน</p>
+
+      <h2>2. ท่อทาง AI (แนวคิด)</h2>
+      <div class="pipeline-steps">
+        <span class="step">Camera</span><span class="arrow">→</span>
+        <span class="step">Detection / Classification</span><span class="arrow">→</span>
+        <span class="step">Food Category</span><span class="arrow">→</span>
+        <span class="step">Estimated Quantity</span><span class="arrow">→</span>
+        <span class="step">kg Dataset</span>
+      </div>
+      <p style="margin-top:1rem">ในต้นแบบนี้ปริมาณมาจากผู้ใช้กรอก หรือค่า demo — ติดป้าย Estimated / Measured / User Input ชัดเจน</p>
+
+      <h2>3. สามเส้นทางตัดสินใจ</h2>
+      <div class="grid-3" style="max-width:100%">
+        <div class="card"><h3>Route 1</h3><p>ลดที่ต้นทาง — อัตราขยะ พยากรณ์ส่วนบริโภค แนะนำปริมาณผลิต (Suggested)</p></div>
+        <div class="card"><h3>Route 2</h3><p>ใช้ทางการเกษตร — เคมี C:N ความชื้น และกฎตัดสินใจ (rules only)</p></div>
+        <div class="card"><h3>Route 3</h3><p>เป้าหมาย & ปรับสูตร — grid search จริงใน JavaScript</p></div>
+      </div>
+
+      <h2>4. ความโปร่งใส</h2>
+      <p>ทุกหน้าคำนวณสำคัญมีปุ่ม “คำนวณอย่างไร?” แสดงอินพุต สูตร และตัวเลขที่แทนค่า — สูตรทั้งหมดอยู่ใน <code>js/formulas.js</code></p>
+
+      <div class="banner banner-warn">
+        <strong>ข้อควรจำ:</strong> Raw Food Waste ≠ Finished Compost — อย่าแนะนำการใช้กับพืชจากขยะดิบเพียงอย่างเดียว
+      </div>
+    </main>
+    <footer class="site-footer">How It Works · Food Waste Lab</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>FW.initPublicPage("how");</script>
+</body>
+</html>

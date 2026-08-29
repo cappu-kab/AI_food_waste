@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เส้นทาง 2 ใช้ทางการเกษตร — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Route 2 — Agricultural Use</h1>
+          <p class="page-sub">ใช้เฉพาะขยะอาหารแข็ง (Unserved + Plate) · แยกของเหลวและการปนเปื้อน</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="expert-toggle" /> Expert Mode</label>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("route2")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    document.getElementById("expert-toggle").checked = FW.isExpertMode();
+    document.getElementById("expert-toggle").addEventListener("change", (e) => {
+      FW.setExpertMode(e.target.checked); render();
+    });
+
+    function render() {
+      const meal = FW.getLatestMeal();
+      const root = document.getElementById("content");
+      if (!meal) {
+        root.innerHTML = FW.emptyState("INSUFFICIENT DATA", ["มื้ออาหาร"]);
+        return;
+      }
+      const a = F.analyzeMealWaste(meal);
+      const chem = F.analyzeCompostChemistry(a.wasteByCategory, FW_DATA.foodMaterials);
+      const decision = F.decisionEngine({
+        contaminationTotal: a.contaminationTotal,
+        solidWaste: a.wasteTotal,
+        freeLiquidL: a.freeLiquidL,
+        cn: chem.cn,
+        mmix: chem.mmix,
+        plantFraction: chem.plantFraction,
+      });
+
+      root.innerHTML = `
+        ${FW.lowConfidenceBanner()}
+        <div class="card reco-card ${decision.status}" style="margin-bottom:1rem">
+          <div class="kpi-meta">${FW.badge("Calculated")} Decision engine (rules only)</div>
+          <p class="reco-title">${decision.recommendation}</p>
+          ${decision.vermiNote ? `<p><strong>${decision.vermiNote}</strong></p>` : ""}
+          <h3>Why</h3>
+          <ul>${decision.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+          <h3>Required Preparation</h3>
+          <ul>${decision.requiredPreparation.map(r => `<li>${r}</li>`).join("")}</ul>
+          <div class="grid-2" style="margin-top:1rem">
+            <div><strong>Current C:N</strong> ${F.roundDisplay(decision.currentCN,"cn")} ${FW.badge("Estimated")}</div>
+            <div><strong>Current Moisture</strong> ${F.roundDisplay(decision.currentMoisture*100,"pct")}% ${FW.badge("Estimated")}</div>
+          </div>
+          <p style="margin-top:0.75rem"><strong>Data Quality:</strong> Material properties = Database Reference; masses = User Input / Calculated</p>
+        </div>
+
+        <div class="card">
+          <h3>เคมีรายหมวด (solid food waste only)</h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>หมวด</th><th>W</th><th>Share%</th><th>DM</th><th>Water</th><th>C</th><th>N</th><th>M</th></tr></thead>
+            <tbody>
+              ${chem.rows.map(r => `<tr>
+                <td>${FW.catLabel(r.key)}</td>
+                <td>${F.roundDisplay(r.w,"kg")}</td>
+                <td>${F.roundDisplay(r.share,"pct")}</td>
+                <td>${F.roundDisplay(r.dm,"kg")}</td>
+                <td>${F.roundDisplay(r.water,"kg")}</td>
+                <td>${F.roundDisplay(r.c,"kg")}</td>
+                <td>${F.roundDisplay(r.n,"kg")}</td>
+                <td>${r.moisture}</td>
+              </tr>`).join("")}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>รวม</td>
+                <td>${F.roundDisplay(chem.wtotal,"kg")}</td>
+                <td>100</td>
+                <td>${F.roundDisplay(chem.dmTotal,"kg")}</td>
+                <td>—</td>
+                <td>${F.roundDisplay(chem.ctotal,"kg")}</td>
+                <td>${F.roundDisplay(chem.ntotal,"kg")}</td>
+                <td>${F.roundDisplay(chem.mmix,"cn")}</td>
+              </tr>
+            </tfoot>
+          </table></div>
+          <p>Free liquid <strong>${a.freeLiquidL} L</strong> และ contamination <strong>${F.roundDisplay(a.contaminationTotal,"kg")} kg</strong> ไม่รวมในส่วนผสมเคมี</p>
+          <p>Plant-based fraction = ${F.roundDisplay(chem.plantFraction*100,"pct")}%</p>
+          ${FW.howCalculatedPanel("how-r2", "Compost chemistry", [
+            ...chem.rows.map(r => `${r.key}: DM=${r.w}*(1-${r.moisture})=${r.dm}; C=${r.dm}*${r.carbonFrac}=${r.c}; N=${r.dm}*${r.nitrogenFrac}=${r.n}`),
+            `C:N = ${chem.ctotal} / ${chem.ntotal} = ${chem.cn}`,
+            `Mmix = ${chem.mmix}`,
+            `Rules: contam/solid>${(0.02*100)}% → SORT; liquid>0 → SEPARATE; C:N∉[20,40] or M∉[45,65]% → ADJUST; else COMPOST; plant≥85% → vermi note`,
+          ])}
+        </div>
+
+        <div class="card section">
+          <h3>Material database ${FW.badge("Database Reference")}</h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>วัสดุ</th><th>M</th><th>C</th><th>N</th><th>Price</th><th>Available</th></tr></thead>
+            <tbody>
+              ${Object.values(FW_DATA.amendments).map(a => `<tr>
+                <td>${a.labelTh} (${a.labelEn})</td>
+                <td>${a.moisture}</td><td>${a.carbon}</td><td>${a.nitrogen}</td>
+                <td>${a.price} THB/kg</td><td>${a.available} kg</td>
+              </tr>`).join("")}
+            </tbody>
+          </table></div>
+          <a class="btn btn-primary" href="route3.html">ไปปรับสูตรให้เข้าเป้า (Route 3)</a>
+        </div>
+        <p class="disclaimer">ข้อจำกัดความรับผิด: นี่คือเคมีขยะดิบ ไม่ใช่คำแนะนำพืชผลจากปุ๋ยหมักสำเร็จรูป</p>
+      `;
+    }
+    render();
+  </script>
+</body>
+</html>

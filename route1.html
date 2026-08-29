@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เส้นทาง 1 ลดที่ต้นทาง — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Route 1 — Source Reduction</h1>
+          <p class="page-sub">Suggested / Estimated — ไม่สั่งครัวให้ตัดปริมาณทันที</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="expert-toggle" /> Expert Mode</label>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("route1")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    const expert = document.getElementById("expert-toggle");
+    expert.checked = FW.isExpertMode();
+    expert.addEventListener("change", () => { FW.setExpertMode(expert.checked); render(); });
+
+    let buffer, expected;
+
+    function render() {
+      const meal = FW.getLatestMeal();
+      const root = document.getElementById("content");
+      if (!meal) {
+        root.innerHTML = FW.emptyState("INSUFFICIENT DATA", ["บันทึกมื้อใน Kitchen Input"]);
+        return;
+      }
+      const settings = FW.getSettings();
+      if (buffer == null) buffer = settings.safetyBuffer ?? 1.08;
+      if (expected == null) expected = settings.expectedDiners || meal.diners;
+
+      const table = F.sourceReductionTable(meal, {
+        safetyBuffer: Number(buffer),
+        expectedDiners: Number(expected),
+        historicalConsumption: FW_DATA.mockConsumptionPerPerson,
+      });
+      const t = table.total;
+
+      root.innerHTML = `
+        <div class="card form-grid" style="margin-bottom:1rem">
+          <div>
+            <label for="buffer">Safety Buffer ${FW.badge("User Input")}</label>
+            <input type="number" id="buffer" min="1" step="0.01" value="${buffer}" />
+          </div>
+          <div>
+            <label for="expected">Expected Diners ${FW.badge("User Input")}</label>
+            <input type="number" id="expected" min="1" step="1" value="${expected}" />
+          </div>
+        </div>
+        <div class="banner banner-info">ค่า Recommended / Suggested เป็นประมาณการจากพยากรณ์ — ใช้ประกอบการตัดสินใจ ไม่ใช่คำสั่งบังคับ</div>
+        <div class="card">
+          <div class="table-wrap"><table class="data">
+            <thead>
+              <tr>
+                <th>หมวด</th>
+                <th>Current Production</th>
+                <th>Waste</th>
+                <th>Waste Rate %</th>
+                <th>Waste/Person kg</th>
+                <th>Suggested Production</th>
+                <th>Potential Reduction</th>
+                <th>Suggested Portion</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${table.rows.map(r => `<tr>
+                <td>${FW.catLabel(r.key)}</td>
+                <td>${F.roundDisplay(r.currentProduction,"kg")}</td>
+                <td>${F.roundDisplay(r.waste,"kg")}</td>
+                <td>${F.roundDisplay(r.wasteRate,"pct")}</td>
+                <td>${F.roundDisplay(r.wastePerPerson,"kg")}</td>
+                <td>${F.roundDisplay(r.recommendedProduction,"kg")} ${FW.badge("Estimated")}</td>
+                <td>${F.roundDisplay(r.potentialReduction,"kg")}</td>
+                <td>${F.roundDisplay(r.suggestedPortion,"kg")}</td>
+              </tr>`).join("")}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>รวม</td>
+                <td>${F.roundDisplay(t.currentProduction,"kg")}</td>
+                <td>${F.roundDisplay(t.waste,"kg")}</td>
+                <td>${F.roundDisplay(t.wasteRate,"pct")}</td>
+                <td>${F.roundDisplay(t.wastePerPerson,"kg")}</td>
+                <td>${F.roundDisplay(t.recommendedProduction,"kg")}</td>
+                <td>${F.roundDisplay(t.potentialReduction,"kg")}</td>
+                <td>${F.roundDisplay(t.suggestedPortion,"kg")}</td>
+              </tr>
+            </tfoot>
+          </table></div>
+          ${FW.howCalculatedPanel("how-r1", "Source Reduction (total)", [
+            `Waste = Unserved + Plate = ${t.waste} kg`,
+            `Waste Rate = Waste/Prepared×100 = ${t.waste}/${t.currentProduction}×100 = ${t.wasteRate}`,
+            `Historical consumption/person (kg) = [${table.historicalConsumption.join(", ")}]`,
+            `Weights = [1,2,3,4,5]`,
+            `Forecast = Σ(w×X)/Σw = ${table.forecastCpp}`,
+            `Recommended Production = ExpectedDiners × Forecast × Buffer = ${table.expectedDiners} × ${table.forecastCpp} × ${table.safetyBuffer} = ${t.recommendedProduction}`,
+            `Potential Reduction = Current − Recommended = ${t.currentProduction} − ${t.recommendedProduction} = ${t.potentialReduction}`,
+            `Suggested Portion = Recommended / ExpectedDiners = ${t.suggestedPortion}`,
+          ])}
+          ${FW.isExpertMode() ? `<p class="mono">Today consumption/person = ${table.consumptionPerPersonToday} kg</p>` : ""}
+        </div>
+      `;
+
+      document.getElementById("buffer").addEventListener("change", (e) => { buffer = e.target.value; render(); });
+      document.getElementById("expected").addEventListener("change", (e) => { expected = e.target.value; render(); });
+    }
+    render();
+  </script>
+</body>
+</html>

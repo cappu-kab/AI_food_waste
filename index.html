@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Food Waste Lab — เปลี่ยน Food Waste ให้เป็นข้อมูล</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <section class="hero">
+        <div>
+          <span class="hero-eyebrow">AI Food Waste · Agricultural Learning</span>
+          <h1>เปลี่ยน Food Waste ให้เป็นข้อมูล เพื่อสร้างการเปลี่ยนแปลง</h1>
+          <p class="hero-sub">
+            AI ช่วยวิเคราะห์อาหารที่เหลือจากโรงอาหาร ลดการสูญเสียตั้งแต่ต้นทาง
+            และค้นหาวิธีนำ Food Waste ไปใช้ประโยชน์ด้านการเกษตร
+          </p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href="learning.html">Explore Learning Center</a>
+            <a class="btn btn-outline" href="login.html">School Login</a>
+          </div>
+        </div>
+        <div class="hero-panel" aria-label="ภาพรวมระบบ">
+          <div class="mini-stat"><span>กล้อง → จัดหมวด</span><strong>Detection</strong></div>
+          <div class="mini-stat"><span>ประมาณปริมาณ</span><strong>kg Dataset</strong></div>
+          <div class="mini-stat"><span>ลดที่ต้นทาง</span><strong>Route 1</strong></div>
+          <div class="mini-stat"><span>เคมีปุ๋ยหมัก</span><strong>Route 2–3</strong></div>
+          <p class="caption" style="margin-top:0.75rem">ต้นแบบท้องถิ่น — ค่าสาธารณะเป็นค่าเฉลี่ยรวมเท่านั้น</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>ข้อมูลรวม / ค่าเฉลี่ย</h2>
+            <p class="page-sub">ตัวเลขสาธารณะ — ไม่ระบุโรงเรียน ไม่แสดงเมนูหรือข้อมูลครัวรายวัน</p>
+          </div>
+          <span class="badge badge-ai">ข้อมูลรวม</span>
+        </div>
+        <div class="kpi-grid" id="public-kpis"></div>
+      </section>
+
+      <section class="section grid-2">
+        <article class="card">
+          <h3>ศูนย์เรียนรู้</h3>
+          <p>Food Waste คืออะไร, ท่อทาง AI, ปุ๋ยหมัก C:N และความชื้น — อ่านง่าย มีแผนภาพ</p>
+          <a class="btn btn-ghost" href="learning.html">ไปที่ Learning Center →</a>
+        </article>
+        <article class="card">
+          <h3>คลังสูตรคำนวณ</h3>
+          <p>ทุกสูตรมีชื่อ อินพุต หน่วย ตัวอย่างตัวเลข และการตรวจ PASS/FAIL ในเบราว์เซอร์</p>
+          <a class="btn btn-ghost" href="formulas.html">เปิด Formula Library →</a>
+        </article>
+      </section>
+    </main>
+    <footer class="site-footer">Food Waste Lab · Local Prototype · ไม่ใช่คำแนะนำพืชผลจากขยะดิบ</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    FW.initPublicPage("home");
+    const k = FW_DATA.publicKpis;
+    document.getElementById("public-kpis").innerHTML = [
+      { label: "Food Waste Analyzed", value: k.foodWasteAnalyzedKg.toLocaleString(), unit: "kg", badge: "Estimated" },
+      { label: "Participating Schools", value: k.participatingSchools, unit: "แห่ง", badge: "Measured" },
+      { label: "Average Waste / Person", value: k.avgWastePerPersonG, unit: "g", badge: "Calculated" },
+      { label: "Food Waste Diverted", value: k.foodWasteDivertedKg.toLocaleString(), unit: "kg", badge: "Estimated" },
+    ].map(x => `
+      <div class="card kpi">
+        <div class="kpi-label">${x.label}</div>
+        <div class="kpi-value">${x.value}<span class="kpi-unit">${x.unit}</span></div>
+        <div class="kpi-meta">ข้อมูลรวม / ค่าเฉลี่ย ${FW.badge(x.badge)}</div>
+      </div>`).join("");
+  </script>
+</body>
+</html>

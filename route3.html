@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เส้นทาง 3 เป้าหมายและปรับสูตร — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Route 3 — Target & Optimization</h1>
+          <p class="page-sub">Grid search จริงใน JavaScript — ไม่เดาข้อความ</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="expert-toggle" /> Expert Mode</label>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("route3")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    document.getElementById("expert-toggle").checked = FW.isExpertMode();
+    document.getElementById("expert-toggle").addEventListener("change", (e) => {
+      FW.setExpertMode(e.target.checked); render();
+    });
+
+    function render() {
+      const meal = FW.getLatestMeal();
+      const root = document.getElementById("content");
+      if (!meal) {
+        root.innerHTML = FW.emptyState("INSUFFICIENT DATA", ["มื้ออาหาร"]);
+        return;
+      }
+      const a = F.analyzeMealWaste(meal);
+      const chem = F.analyzeCompostChemistry(a.wasteByCategory, FW_DATA.foodMaterials);
+      const target = FW_DATA.aerobicCompostTarget;
+
+      const result = F.optimizeAerobicMix({
+        wfood: chem.wtotal,
+        mfood: chem.mmix,
+        cfood: chem.ctotal,
+        nfood: chem.ntotal,
+        target: {
+          cnMin: target.cnMin,
+          cnMax: target.cnMax,
+          moistureMin: target.moistureMin,
+          moistureMax: target.moistureMax,
+        },
+        amendments: FW_DATA.amendments,
+        includeStraw: true,
+      });
+
+      const best = result.best;
+      let body = "";
+      if (!result.found) {
+        body = `
+          <div class="banner banner-danger">
+            ไม่พบส่วนผสมที่อยู่ในเป้าจากการค้นหา (dry leaves 0–30 step 0.5, rice husk 0–20 step 0.5, และ straw 0–20 step 1)
+            — ลองแยกของเหลวเพิ่ม หรือเพิ่มวัสดุคาร์บอน
+          </div>`;
+      } else {
+        const adds = best.additions.map(x => {
+          const meta = FW_DATA.amendments[x.key];
+          return `${meta.labelTh}: ${F.roundDisplay(x.x,"kg")} kg`;
+        }).join(", ") || "ไม่ต้องเติม (เข้าเป้าแล้ว)";
+        body = `
+          <div class="card reco-card" style="margin-bottom:1rem">
+            <p class="status-ok">STATUS ✓ Target Range Reached</p>
+            <p><strong>TARGET:</strong> ${target.nameTh}<br/>
+              C:N ${target.cnMin}–${target.cnMax} · Moisture ${(target.moistureMin*100)}–${(target.moistureMax*100)}%</p>
+            <div class="grid-2">
+              <div>
+                <h3>CURRENT ${FW.badge("Estimated")}</h3>
+                <p>C:N ${F.roundDisplay(chem.cn,"cn")} · Moisture ${F.roundDisplay(chem.mmix*100,"pct")}%</p>
+              </div>
+              <div>
+                <h3>AFTER ADJUSTMENT ${FW.badge("Predicted")}</h3>
+                <p>C:N ${F.roundDisplay(best.cn,"cn")} · Moisture ${F.roundDisplay(best.moisture*100,"pct")}%</p>
+              </div>
+            </div>
+            <h3>RECOMMENDED additions ${FW.badge("Estimated")}</h3>
+            <p>${adds}</p>
+            <p><strong>Estimated Cost:</strong> ${F.roundDisplay(best.cost,"thb")} THB · Total amendment ${F.roundDisplay(best.totalKg,"kg")} kg · Feasible mixes found: ${result.count}</p>
+          </div>
+          ${FW.howCalculatedPanel("how-r3", "Winning mix substitution", [
+            `Cfood=${chem.ctotal}, Nfood=${chem.ntotal}, Wfood=${chem.wtotal}, Mfood=${chem.mmix}`,
+            ...best.additions.map(x => `Cadded(${x.key})= ${x.x}*(1-${x.moisture})*${x.carbon}=${F.cAdded(x.x,x.moisture,x.carbon)}; Nadded=${F.nAdded(x.x,x.moisture,x.nitrogen)}`),
+            `ΣCadded=${best.cAdded}, ΣNadded=${best.nAdded}`,
+            `CNnew=(Cfood+ΣCadded)/(Nfood+ΣNadded)=${best.cn}`,
+            `Mnew=(Wfood*Mfood + Σ(X*M))/(Wfood+ΣX)=${best.moisture}`,
+            `Cost=Σ(X*Price)=${best.cost}`,
+            `Rank: lowest cost → least total kg → fewer material types`,
+          ])}
+        `;
+      }
+
+      root.innerHTML = `
+        ${FW.lowConfidenceBanner()}
+        <div class="card" style="margin-bottom:1rem">
+          <label for="target">Target selector (MVP)</label>
+          <select id="target" disabled>
+            <option selected>Aerobic Compost — C:N 25–30, Moisture 50–60%</option>
+          </select>
+          <p class="field-hint">ค้นหา: ใบแห้ง 0–30 kg step 0.5 · แกลบ 0–20 step 0.5 · (ถ้าจำเป็น) ฟาง 0–20 step 1</p>
+        </div>
+        ${body}
+        <p class="disclaimer">ค่าทั้งหมดเป็น Estimated/Predicted จากคุณสมบัติฐานข้อมูลอ้างอิง — ไม่ใช่ผลการวัดกองหมักจริง</p>
+      `;
+    }
+    render();
+  </script>
+</body>
+</html>

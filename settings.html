@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ตั้งค่า — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>Settings</h1>
+          <p class="page-sub">ตั้งค่าโรงเรียนและค่าเริ่มต้นการคำนวณ</p>
+        </div>
+      </div>
+      <form id="settings-form" class="card" style="max-width:560px">
+        <div class="form-section">
+          <label for="school">ชื่อโรงเรียน</label>
+          <input type="text" id="school" />
+        </div>
+        <div class="form-section">
+          <label for="buffer">Default Safety Buffer</label>
+          <input type="number" id="buffer" min="1" step="0.01" />
+        </div>
+        <div class="form-section">
+          <label for="diners">Default Expected Diners (ว่าง = ใช้ของมื้อนั้น)</label>
+          <input type="number" id="diners" min="1" step="1" placeholder="เช่น 500" />
+        </div>
+        <div class="form-section">
+          <label for="unit">Unit display</label>
+          <select id="unit">
+            <option value="kg">kg (primary)</option>
+            <option value="g">g where relevant</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary">บันทึกการตั้งค่า</button>
+          <button type="button" class="btn btn-outline" id="btn-reset">Reset demo data</button>
+        </div>
+      </form>
+      <p class="caption" id="msg"></p>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("settings")) throw new Error("auth");
+    const s = FW.getSettings();
+    document.getElementById("school").value = s.schoolName || FW_DATA.schoolNameDefault;
+    document.getElementById("buffer").value = s.safetyBuffer ?? 1.08;
+    document.getElementById("diners").value = s.expectedDiners ?? "";
+    document.getElementById("unit").value = s.unitDisplay || "kg";
+
+    document.getElementById("settings-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const next = {
+        schoolName: document.getElementById("school").value || FW_DATA.schoolNameDefault,
+        safetyBuffer: Number(document.getElementById("buffer").value) || 1.08,
+        expectedDiners: document.getElementById("diners").value === "" ? null : Number(document.getElementById("diners").value),
+        unitDisplay: document.getElementById("unit").value,
+      };
+      FW.saveSettings(next);
+      const auth = FW.getAuth();
+      if (auth) {
+        auth.schoolName = next.schoolName;
+        localStorage.setItem(FW.STORAGE_KEYS.auth, JSON.stringify(auth));
+      }
+      document.getElementById("msg").textContent = "บันทึกแล้ว";
+      FW.initPrivatePage("settings");
+    });
+
+    document.getElementById("btn-reset").addEventListener("click", () => {
+      if (!confirm("ล้างมื้อทั้งหมดแล้วโหลด demo ใหม่?")) return;
+      FW.resetDemoData();
+      document.getElementById("msg").textContent = "รีเซ็ต demo data แล้ว";
+    });
+  </script>
+</body>
+</html>
