@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>วิธีการทำงาน — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main article">
+      <h1>ทำงานยังไง</h1>
+      <p>
+        <strong>หน้าสาธารณะ</strong> = สำหรับโรงเรียนที่มาศึกษาว่าควรแก้ปัญหาอาหารเหลือยังไง<br />
+        <strong>หลังเข้าสู่ระบบ</strong> = ระบบพร้อมใช้จริงในโรงอาหารตัวเอง
+      </p>
+
+      <h2>1. ครัวจดข้อมูล</h2>
+      <p>
+        คนครัวกรอกว่าทำไปกี่กิโล ตักไปเท่าไร และเหลือบนถาดเท่าไร
+        แยกน้ำซุปกับของที่หมักไม่ได้ด้วย จะได้ไม่ปนกัน
+      </p>
+
+      <h2>2. ถ่ายรูปถาด (ถ้าใช้)</h2>
+      <div class="pipeline-steps">
+        <span class="step">ถ่ายรูป</span><span class="arrow">→</span>
+        <span class="step">แยกว่ามีอะไร</span><span class="arrow">→</span>
+        <span class="step">ประมาณปริมาณ</span><span class="arrow">→</span>
+        <span class="step">ได้ตัวเลข</span>
+      </div>
+      <p style="margin-top:1rem">
+        ในเวอร์ชันทดลอง บางตัวเลขมาจากการกรอกเองหรือข้อมูลตัวอย่าง
+        และจะมีป้ายบอกว่าเป็นค่าประมาณ ค่าชั่งจริง หรือคนกรอก
+      </p>
+
+      <h2>3. แล้วเอาตัวเลขไปทำอะไร</h2>
+      <div class="grid-3" style="max-width:100%">
+        <div class="card"><h3>ลดตั้งแต่ต้น</h3><p>ดูว่าเหลืออะไรบ่อย แล้วแนะนำว่าวันถัดไปควรลดข้าว / ผัก กี่กิโล (คนละเรื่องกับเอาขยะไปใช้)</p></div>
+        <div class="card"><h3>ดูของเหลือ</h3><p>ชื้นเท่าไร ค่าธาตุเท่าไร เหมาะหมักเลยไหม หรือต้องคัดแยก / แยกน้ำก่อน</p></div>
+        <div class="card"><h3>ตั้งเป้าแล้วปรับ</h3><p>บอกว่าอยากได้ปุ๋ยแบบไหน แล้วระบบบอกว่าต้องเติมใบแห้งหรือแกลบเท่าไร</p></div>
+      </div>
+
+      <h2>4. ตัวเลขเปิดเผยได้</h2>
+      <p>
+        หน้าที่มีตัวเลขสำคัญจะมีปุ่มถามว่า “ตัวเลขนี้คิดยังไง?”
+        กดแล้วจะเห็นสูตรและตัวเลขที่ใช้คิด
+      </p>
+
+      <div class="banner banner-warn">
+        <strong>จำไว้นิดเดียว:</strong> อาหารเหลือดิบยังไม่ใช่ปุ๋ย — อย่าเอาไปใส่ต้นไม้เลย
+      </div>
+    </main>
+    <footer class="site-footer">Food Waste Lab · ของทดลองใช้ · อาหารเหลือดิบยังไม่ใช่ปุ๋ย</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>FW.initPublicPage("how");</script>
+</body>
+</html>

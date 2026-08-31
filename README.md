@@ -1,61 +1,64 @@
-# AI Food Waste Lab — Local HTML Prototype
+# Food Waste Lab — AI Food Waste Web
 
-Static multi-page website for an **AI Food Waste Management & Agricultural Learning Center**. No backend, no npm build step.
+เว็บจัดการอาหารเหลือในโรงเรียน + สแกนถาดด้วย AI (มีโมเดลพร้อมใช้)
 
-## Run locally
+Clone แล้วรันบนเครื่องได้เลย ไม่ต้องเทรนโมเดลเพิ่ม
 
-From the project root:
+## ความต้องการ
+
+- Python 3.10+ (แนะนำ 3.12)
+- Windows: ดับเบิลคลิก `run-local.bat` ได้เลย
+- หรือใช้ Docker (ถ้ามี) — `docker compose up --build`
+
+## รันแบบเร็ว (Windows)
+
+```bat
+git clone https://github.com/cappu-kab/AI_food_waste.git
+cd AI_food_waste
+run-local.bat
+```
+
+ครั้งแรกจะสร้าง `.venv` และติดตั้งแพ็กเกจให้เอง (อาจใช้เวลาหลายนาที)
+
+## รันด้วยคำสั่ง
+
+```bat
+python -m venv .venv
+.\.venv\Scripts\pip.exe install -r requirements.txt
+.\.venv\Scripts\pip.exe install ultralytics opencv-python-headless
+.\.venv\Scripts\python.exe webapp.py --model models\best.pt --device cpu --port 8899
+```
+
+บน macOS / Linux:
 
 ```bash
-python3 -m http.server 8080
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt ultralytics opencv-python-headless
+python webapp.py --model models/best.pt --device cpu --port 8899
 ```
 
-Then open [http://localhost:8080](http://localhost:8080).
+## เปิดเว็บ
 
-On Windows, `python -m http.server 8080` works the same if Python is installed.
+| ลิงก์ | หน้า |
+|---|---|
+| http://localhost:8899/site/ | หน้าแรก Food Waste Lab |
+| http://localhost:8899/ | สแกนถาดด้วย AI |
+| http://localhost:8899/?demo=1 | ลองตัวอย่างโดยไม่ต้องมีรูป |
+| http://localhost:8899/site/project-brief.html | สรุปโปรเจกต์สำหรับสไลด์/พรีเซนต์ |
 
-You can also open `index.html` directly in a browser; using a local server is preferred so Chart.js CDN and relative paths behave consistently.
+## มีอะไรในนี้
 
-## What’s included
+- `models/best.pt` — โมเดล YOLOv8s-seg ที่เทรนแล้ว (5 class)
+- `webapp.py` — เซิร์ฟเวอร์ Flask
+- `AI_food_waste-main/` — เว็บ Lab (หน้าแรก / เรียนรู้ / รายงาน)
+- `templates/` — หน้าสแกนถาด
+- `samples/demo/` — รูปตัวอย่าง
+- `project-brief.html` — เอกสารสรุปสำหรับพรีเซนต์
+- `run-local.bat` / `RUN_LOCAL.md` — คู่มือรันบนเครื่อง
 
-| Path | Role |
-|------|------|
-| `index.html` | Public home |
-| `public-dashboard.html` | Aggregate public KPIs & charts |
-| `learning.html` | Learning Center articles |
-| `how-it-works.html` | System overview |
-| `formulas.html` | Formula library + PASS/FAIL self-check |
-| `login.html` | Mock login (any password) |
-| `dashboard.html` … `settings.html` | Private school pages |
-| `css/styles.css` | Shared design system |
-| `js/data.js` | Material DB, mock history, public aggregates |
-| `js/formulas.js` | **All** calculation formulas |
-| `js/app.js` | Auth, localStorage, nav helpers |
+## หมายเหตุ
 
-## Mock login
-
-1. Open **School Login**
-2. Choose Kitchen Staff or School Admin
-3. Enter any password
-4. School name after login: **โรงเรียนสาธิตตัวอย่าง**
-
-Public pages never show the school name or kitchen-specific data.
-
-## Demo meal
-
-On **Kitchen Input**, click **Load demo day**:
-
-- Diners 500, Prepared 235 kg, Waste 50 kg  
-- Waste Rate **21.3%**, Waste/person **100 g**
-
-Formulas are implemented in `js/formulas.js` only. Open `formulas.html` to see browser asserts (PASS/FAIL), or in the console:
-
-```js
-FW_FORMULAS.runSelfChecks(FW_DATA)
-```
-
-## Notes
-
-- Chart.js is loaded from CDN on chart pages.
-- Primary UI language is Thai; English labels appear where useful.
-- Compost recommendations are for **raw waste chemistry**, not finished compost crop advice.
+- ค่าเริ่มต้นรันบน CPU
+- ตั้งขนาดถาดจริงใน `.env` จาก `.env.example` ถ้าถาดไม่ใช่เส้นผ่านศูนย์กลาง 35 ซม.
+- อาหารเหลือดิบยังไม่ใช่ปุ๋ยหมักสำเร็จ

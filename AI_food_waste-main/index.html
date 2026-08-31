@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Food Waste Lab — อาหารเหลือในโรงเรียน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <section class="hero">
+        <div>
+          <span class="hero-eyebrow">โรงเรียน · โรงอาหาร · นักเรียน</span>
+          <h1>อาหารเหลือในโรงอาหาร<br />เกิดขึ้นทุกวัน</h1>
+          <p class="hero-sub">
+            บางวันทำเยอะไป บางวันเด็กกินไม่หมด แล้วของที่เหลือก็ถูกทิ้ง
+            เว็บนี้ช่วยดูว่าเหลืออะไรบ้าง แล้วหาทางลดและใช้ให้คุ้มขึ้น
+          </p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href="learning.html">ไปอ่านเรื่องอาหารเหลือ</a>
+            <a class="btn btn-outline" href="login.html">เข้าสู่ระบบโรงเรียน</a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <img src="images/problem-tray.jpg" alt="ถาดอาหารกลางวันที่ยังเหลืออยู่" width="640" height="360" />
+          <p class="caption">ถาดหลังกินเสร็จ — ยังมีข้าวและกับข้าวเหลืออยู่</p>
+        </div>
+      </section>
+
+      <section class="section problem-intro" aria-labelledby="problem-title">
+        <div class="section-head">
+          <div>
+            <h2 id="problem-title">ปัญหาคืออะไร</h2>
+            <p class="page-sub">เล่าแบบสั้น ๆ ให้อ่านรู้เรื่อง</p>
+          </div>
+        </div>
+
+        <div class="problem-grid">
+          <article class="card problem-card">
+            <img src="images/problem-to-compost.jpg" alt="อาหารเหลือกับทางนำไปทำปุ๋ย" width="640" height="360" />
+            <h3>ทำไมถึงเหลือ</h3>
+            <p>
+              ในโรงอาหาร ครัวต้องเดาว่าวันนี้มีกี่คน และแต่ละคนกินเท่าไร
+              ถ้าเดาสูงไป อาหารก็เหลือ ถ้าเด็กตักเยอะเกิน ก็กินไม่หมดเหมือนกัน
+            </p>
+          </article>
+          <article class="card problem-card">
+            <h3>เหลือแล้วเป็นไร</h3>
+            <ul class="simple-list">
+              <li><strong>เสียเงิน</strong> — ซื้อของมาทำแล้วไม่ได้กิน</li>
+              <li><strong>เสียแรง</strong> — คนครัวทำมาทั้งเช้า</li>
+              <li><strong>กองเป็นขยะ</strong> — เหม็น และกินที่ฝังกลบ</li>
+            </ul>
+            <p>
+              ถ้าเรารู้ว่าเหลืออะไรบ่อย ๆ จะทำอาหารได้ใกล้ความจริงขึ้น
+              ของที่เหลือจริง ๆ ก็ยังเอาไปหมักเป็นปุ๋ยช่วยต้นไม้ได้
+            </p>
+          </article>
+        </div>
+
+        <div class="photo-strip" aria-label="รูปถาดตัวอย่าง">
+          <figure>
+            <img src="images/tray-demo-01.jpg" alt="ถาดอาหารตัวอย่าง 1" width="320" height="240" />
+            <figcaption>ตัวอย่างถาด 1</figcaption>
+          </figure>
+          <figure>
+            <img src="images/tray-demo-02.jpg" alt="ถาดอาหารตัวอย่าง 2" width="320" height="240" />
+            <figcaption>ตัวอย่างถาด 2</figcaption>
+          </figure>
+          <figure>
+            <img src="images/tray-demo-03.jpg" alt="ถาดอาหารตัวอย่าง 3" width="320" height="240" />
+            <figcaption>ตัวอย่างถาด 3</figcaption>
+          </figure>
+        </div>
+        <p class="caption photo-strip-note">รูปถาดจริงที่ใช้สอนคอมพิวเตอร์แยกว่าเหลือข้าว ผัก หรือเนื้อ</p>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>เว็บนี้ช่วยอะไร</h2>
+            <p class="page-sub">สั้น ๆ แค่ 3 ข้อ</p>
+          </div>
+        </div>
+        <div class="grid-3 howto-cards">
+          <article class="card">
+            <div class="howto-num">1</div>
+            <h3>ดูว่าเหลืออะไร</h3>
+            <p>ถ่ายรูปถาด หรือให้ครัวจดเอง แล้วแยกเป็นข้าว ผัก เนื้อ ฯลฯ</p>
+          </article>
+          <article class="card">
+            <div class="howto-num">2</div>
+            <h3>ทำให้น้อยลง</h3>
+            <p>ใช้ตัวเลขช่วยคิดว่าวันถัดไปควรทำเท่าไร จะได้ไม่เหลือเยอะ</p>
+          </article>
+          <article class="card">
+            <div class="howto-num">3</div>
+            <h3>เอาของเหลือไปใช้</h3>
+            <p>ดูว่าส่วนไหนหมักเป็นปุ๋ยได้ ก่อนเอาไปใส่ดินหรือต้นไม้</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section grid-2">
+        <article class="card">
+          <h3>ศูนย์เรียนรู้</h3>
+          <p>อ่านสั้น ๆ เรื่องอาหารเหลือ การถ่ายรูปถาด และการทำปุ๋ยหมัก</p>
+          <a class="btn btn-ghost" href="learning.html">ไปอ่าน →</a>
+        </article>
+        <article class="card">
+          <h3>ศึกษาแนวทางแก้ปัญหา</h3>
+          <p>ดูตัวอย่างตัวเลข และ 2 ขั้นว่าของเหลือควรดูคุณสมบัติยังไง แล้วปรับเข้าเป้ายังไง</p>
+          <a class="btn btn-ghost" href="public-dashboard.html">ดูแนวทาง →</a>
+        </article>
+      </section>
+    </main>
+    <footer class="site-footer">Food Waste Lab · ของทดลองใช้ · อาหารเหลือดิบยังไม่ใช่ปุ๋ย</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>FW.initPublicPage("home");</script>
+</body>
+</html>

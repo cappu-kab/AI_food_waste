@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Food Waste Lab — สรุปโปรเจกต์สำหรับสไลด์ / พรีเซนต์ / โปสเตอร์</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --card: #fff;
+      --ink: #1a241c;
+      --muted: #5c6b60;
+      --line: #e2ddd3;
+      --green: #1b5e3b;
+      --green-soft: #e6f2eb;
+      --clay: #c45c26;
+      --earth: #8b6914;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans Thai", Sarabun, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    header.hero {
+      background: linear-gradient(135deg, #1b5e3b 0%, #2f7a4f 55%, #8b6914 100%);
+      color: #fff;
+      border-radius: 18px;
+      padding: 1.75rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    header.hero h1 { margin: 0 0 0.4rem; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; }
+    header.hero p { margin: 0; opacity: 0.95; max-width: 40rem; }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1rem;
+    }
+    .pill {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 999px;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.82rem;
+    }
+    nav.toc {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+    nav.toc strong { display: block; margin-bottom: 0.45rem; }
+    nav.toc a { color: var(--green); margin-right: 0.75rem; text-decoration: none; font-size: 0.92rem; }
+    nav.toc a:hover { text-decoration: underline; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.25rem 1.25rem 1.35rem;
+      margin-bottom: 1rem;
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.25rem;
+      color: var(--green);
+      display: flex; align-items: center; gap: 0.55rem;
+    }
+    .num {
+      width: 1.7rem; height: 1.7rem; border-radius: 50%;
+      background: var(--green-soft); color: var(--green);
+      display: grid; place-items: center; font-size: 0.85rem; font-weight: 700;
+      flex: none;
+    }
+    h3 { margin: 1.1rem 0 0.45rem; font-size: 1.05rem; }
+    p, li { color: var(--muted); }
+    p strong, li strong { color: var(--ink); }
+    ul { margin: 0.35rem 0 0.6rem; padding-left: 1.2rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (max-width: 720px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.85rem 0.95rem;
+      background: #fffcf7;
+    }
+    .box h4 { margin: 0 0 0.35rem; font-size: 0.95rem; color: var(--ink); }
+    .box p { margin: 0; font-size: 0.9rem; }
+    .flow {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.75rem 0;
+    }
+    .flow .step {
+      background: var(--green-soft); color: var(--green); font-weight: 600;
+      padding: 0.35rem 0.7rem; border-radius: 999px; font-size: 0.88rem;
+    }
+    .flow .arrow { color: var(--earth); font-weight: 700; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 0.5rem;
+    }
+    th, td {
+      text-align: left; padding: 0.55rem 0.45rem; border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+    .eq {
+      font-family: ui-monospace, Consolas, monospace;
+      background: #f0eee8;
+      border-radius: 8px;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.86rem;
+      color: var(--ink);
+      margin: 0.35rem 0;
+      overflow-x: auto;
+    }
+    .formula {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.8rem 0.9rem;
+      margin: 0.55rem 0;
+      background: #fff;
+    }
+    .formula h4 { margin: 0 0 0.25rem; font-size: 0.95rem; }
+    .note {
+      background: #fff4e8; border: 1px solid #efd0b0; border-radius: 12px;
+      padding: 0.8rem 0.95rem; margin-top: 0.75rem; font-size: 0.9rem; color: #7a3e10;
+    }
+    .note strong { color: #6b3208; }
+    footer {
+      text-align: center; color: var(--muted); font-size: 0.82rem; margin-top: 1.5rem;
+    }
+    .tag-skip {
+      display: inline-block; background: #fdeceb; color: #a92a20;
+      border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.75rem; font-weight: 600;
+    }
+    @media print {
+      body { background: #fff; }
+      .wrap { max-width: none; padding: 0; }
+      section, header.hero, nav.toc { break-inside: avoid; box-shadow: none; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Food Waste Lab<br />ระบบจัดการอาหารเหลือในโรงเรียน</h1>
+      <p>
+        สรุปโปรเจกต์แบบสั้น ๆ สำหรับทำสไลด์ พรีเซนต์ และโปสเตอร์ —
+        ครอบคลุมที่มาของปัญหา วิธีทำงานของระบบ (ไม่รวมการเทรน AI)
+        การแสดงผล และสูตรที่ใช้คำนวณว่าจะเอาอาหารเหลือไปทำอะไรต่อ
+      </p>
+      <div class="meta">
+        <span class="pill">โรงเรียน / โรงอาหาร</span>
+        <span class="pill">สแกนถาดด้วย AI</span>
+        <span class="pill">ลดการเหลือ + ใช้ต่อเป็นปุ๋ย</span>
+        <span class="pill">เอกสารอ้างอิงสไลด์</span>
+      </div>
+    </header>
+
+    <nav class="toc">
+      <strong>สารบัญ</strong>
+      <a href="#problem">1. ที่มา / ปัญหา</a>
+      <a href="#goal">2. เป้าหมาย</a>
+      <a href="#how">3. วิธีทำงาน</a>
+      <a href="#display">4. การแสดงผล</a>
+      <a href="#formulas">5. สูตรคำนวณ</a>
+      <a href="#limits">6. ข้อจำกัด</a>
+    </nav>
+
+    <!-- 1 -->
+    <section id="problem">
+      <h2><span class="num">1</span> ที่มา / ปัญหา</h2>
+      <p>
+        ในโรงอาหารโรงเรียน อาหารเหลือเกิดได้ทุกวัน ทั้งจาก
+        <strong>ทำเยอะเกินแล้วไม่ได้ตัก</strong> และจาก
+        <strong>ตักแล้วกินไม่หมด</strong>
+      </p>
+      <div class="grid-3" style="margin-top:0.85rem">
+        <div class="box">
+          <h4>เสียเงิน</h4>
+          <p>ซื้อวัตถุดิบมาทำแล้วไม่ได้กิน</p>
+        </div>
+        <div class="box">
+          <h4>เสียแรง</h4>
+          <p>คนครัวเตรียมอาหารมาทั้งเช้า</p>
+        </div>
+        <div class="box">
+          <h4>กลายเป็นขยะ</h4>
+          <p>กองรวมกัน เกิดกลิ่น และกินที่ฝังกลบ</p>
+        </div>
+      </div>
+      <p style="margin-top:0.9rem;margin-bottom:0">
+        <strong>ช่องว่างเดิม:</strong> โรงเรียนมักไม่รู้แน่ชัดว่าเหลืออะไรบ้าง กี่กิโล
+        และของที่เหลือแล้วควรเอาไปใช้ต่อยังไง — จึงวางแผนมื้อถัดไปหรือทำปุ๋ยได้ยาก
+      </p>
+    </section>
+
+    <!-- 2 -->
+    <section id="goal">
+      <h2><span class="num">2</span> เป้าหมายของโปรเจกต์</h2>
+      <ul>
+        <li><strong>วัดและแยกชนิดอาหารเหลือ</strong> จากถาดอาหารกลางวัน</li>
+        <li><strong>ลดการเหลือตั้งแต่ต้น</strong> โดยแนะนำว่าควรทำอาหารชนิดไหนน้อยลงเท่าไร</li>
+        <li><strong>ใช้ของที่เหลือแล้วให้เกิดประโยชน์</strong> โดยดูคุณสมบัติกองหมัก แล้วปรับส่วนผสมให้เข้าเป้า</li>
+        <li><strong>ทำให้เข้าใจง่าย</strong> — หน้าสาธารณะสำหรับศึกษาแนวทาง / หลังเข้าสู่ระบบสำหรับใช้จริงในโรงเรียน</li>
+      </ul>
+    </section>
+
+    <!-- 3 -->
+    <section id="how">
+      <h2><span class="num">3</span> วิธีทำงานของระบบ <span class="tag-skip">ไม่รวมวิธีเทรน AI</span></h2>
+
+      <h3>ภาพรวมทั้งระบบ</h3>
+      <div class="flow">
+        <span class="step">ถ่ายรูปถาด</span><span class="arrow">→</span>
+        <span class="step">AI แยกชนิดอาหาร</span><span class="arrow">→</span>
+        <span class="step">รวมกับน้ำหนักที่ชั่งจริง</span><span class="arrow">→</span>
+        <span class="step">บันทึกครัว / รายงาน</span><span class="arrow">→</span>
+        <span class="step">แนะนำลดการทำ + ใช้ต่อ</span>
+      </div>
+
+      <h3>3.1 สแกนถาดอาหาร (มีโมเดลพร้อมใช้)</h3>
+      <ul>
+        <li>ถ่ายถาดจากด้านบน ให้เห็นขอบถาดทั้งใบ</li>
+        <li>ระบบแยกได้ 5 ชนิด: <strong>ข้าว · ผัก · เนื้อ · เมนูผสม · น้ำ/น้ำแกง</strong></li>
+        <li>ใช้ขอบถาดเป็นไม้บรรทัดแปลงพิกเซล → ตารางเซนติเมตร</li>
+        <li>กรอกน้ำหนักขยะรวมที่ชั่งจริง (กก.) แล้วระบบแบ่งเป็นรายชนิดตามสัดส่วนพื้นที่ × ความหนาแน่นโดยประมาณ</li>
+      </ul>
+      <div class="note">
+        <strong>หมายเหตุสำหรับพรีเซนต์:</strong> เอกสารนี้ไม่ลงรายละเอียดการเทรนโมเดล
+        ใช้โมเดลที่เทรนเสร็จแล้ว (`models/best.pt`) เพื่อสาธิตการใช้งานจริง
+      </div>
+
+      <h3>3.2 บันทึกข้อมูลครัว</h3>
+      <ul>
+        <li>กรอกจำนวนผู้กิน, อาหารที่ทำ, ที่ไม่ได้เสิร์ฟ, ที่เหลือบนถาด</li>
+        <li>แยกน้ำซุป และของแปลกปลอม (เช่น พลาสติก) ออกจากอาหารเหลือแข็ง</li>
+      </ul>
+
+      <h3>3.3 สามเส้นทางตัดสินใจ (หลังได้ตัวเลขแล้ว)</h3>
+      <div class="grid-3">
+        <div class="box">
+          <h4>เส้นทาง 1 — ลดตั้งแต่ต้น</h4>
+          <p>ดูว่าเหลืออะไรบ่อย แล้วแนะนำว่ามื้อถัดไปควรลดชนิดไหนกี่กิโล</p>
+        </div>
+        <div class="box">
+          <h4>เส้นทาง 2 — ดูของที่มีอยู่</h4>
+          <p>ชื้นเท่าไร ค่าธาตุ (C:N) เท่าไร เหมาะหมักไหม หรือต้องคัดแยก/แยกน้ำก่อน</p>
+        </div>
+        <div class="box">
+          <h4>เส้นทาง 3 — ตั้งเป้าแล้วปรับ</h4>
+          <p>อยากได้ปุ๋ยแบบไหน → ต้องเติมใบแห้ง/แกลบเท่าไรถึงเข้าเป้า</p>
+        </div>
+      </div>
+      <p style="margin-top:0.85rem;margin-bottom:0">
+        <strong>สำคัญ:</strong> การลดการทำอาหารวันถัดไป (เส้นทาง 1)
+        เป็นคนละเรื่องกับ “เอาของที่เหลือแล้วไปใช้ต่อ” (เส้นทาง 2–3)
+      </p>
+    </section>
+
+    <!-- 4 -->
+    <section id="display">
+      <h2><span class="num">4</span> การแสดงผลบนเว็บ</h2>
+      <div class="grid-2">
+        <div class="box">
+          <h4>หน้าสาธารณะ</h4>
+          <p>สำหรับโรงเรียนที่มาศึกษาแนวทาง — หน้าแรกเกริ่นปัญหา, ตัวเลขตัวอย่าง, กราฟ, ศูนย์เรียนรู้, สูตร</p>
+        </div>
+        <div class="box">
+          <h4>หลังเข้าสู่ระบบ</h4>
+          <p>สำหรับใช้จริง — บันทึกครัว, สแกนถาด, วิเคราะห์, รายงานพร้อมคำแนะนำลด/หมัก/ปรับสูตร</p>
+        </div>
+      </div>
+      <h3>สิ่งที่โชว์ในรายงานหลัก</h3>
+      <ul>
+        <li>ปริมาณอาหารเหลือรวม · เหลือต่อคน · อัตราการเหลือ</li>
+        <li>แยกชนิด (ข้าว ผัก ผลไม้ เนื้อ อื่น ๆ)</li>
+        <li>สรุปสั้น ๆ เช่น “ควรลดข้าวประมาณ X กก.”</li>
+        <li>มิเตอร์ความชื้น / C:N และสถานะว่าหมักได้ไหม</li>
+        <li>การ์ด “ตอนนี้ → หลังปรับ” และรายการวัสดุที่ควรเติม</li>
+      </ul>
+    </section>
+
+    <!-- 5 -->
+    <section id="formulas">
+      <h2><span class="num">5</span> สูตรที่ใช้คำนวณทั้งหมด</h2>
+      <p>สูตรด้านล่างเป็นสูตรที่ระบบใช้จริงในโค้ดคำนวณ (ไม่ hardcode ผลลัพธ์ในหน้าเว็บ)</p>
+
+      <h3>A) สูตรพื้นฐานของมื้ออาหาร</h3>
+      <div class="formula">
+        <h4>อาหารเหลือแข็งรายชนิด</h4>
+        <div class="eq">Wᵢ = Unservedᵢ + PlateWasteᵢ</div>
+        <p>อินพุต: ที่ไม่ได้เสิร์ฟ + เหลือบนถาด ของชนิด i &nbsp;|&nbsp; เอาต์พุต: กก. เหลือของชนิดนั้น</p>
+      </div>
+      <div class="formula">
+        <h4>อาหารเหลือรวม / อัตราเหลือ</h4>
+        <div class="eq">W = Σ Wᵢ &nbsp;&nbsp;|&nbsp;&nbsp; WasteRate = (W / Prepared) × 100</div>
+        <p>ใช้ทำอะไร: ดูว่ามื้อนี้เหลือกี่กิโล และกี่เปอร์เซ็นต์ของที่ทำ</p>
+      </div>
+      <div class="formula">
+        <h4>กินไปแล้ว / กินต่อคน / เหลือต่อคน</h4>
+        <div class="eq">Consumed = Prepared − W</div>
+        <div class="eq">Consumption/person = Consumed / Diners</div>
+        <div class="eq">Waste/person = W / Diners</div>
+        <p>ใช้ทำอะไร: เทียบแต่ละวัน และใช้เป็นฐานพยากรณ์มื้อถัดไป</p>
+      </div>
+
+      <h3>B) เส้นทาง 1 — ลดการเหลือตั้งแต่ต้น</h3>
+      <div class="formula">
+        <h4>พยากรณ์การกินต่อคน (Weighted Moving Average)</h4>
+        <div class="eq">Forecast = Σ(wₖ × Xₖ) / Σ wₖ</div>
+        <p>อินพุต: ค่ากินต่อคนย้อนหลัง X และน้ำหนัก w (เช่น 1,2,3,4,5) &nbsp;|&nbsp; เอาต์พุต: กก./คน ที่คาด</p>
+      </div>
+      <div class="formula">
+        <h4>ปริมาณที่ควรทำ / ลดได้ / ขนาดเสิร์ฟแนะนำ</h4>
+        <div class="eq">RecommendedProduction = ExpectedDiners × Forecast × SafetyBuffer</div>
+        <div class="eq">Reduction = CurrentProduction − RecommendedProduction</div>
+        <div class="eq">RecommendedPortion = RecommendedProduction / ExpectedDiners</div>
+        <p>ใช้ทำอะไร: บอกว่าควรลดข้าว/ผัก/ฯลฯ กี่กิโล ในมื้อถัดไป (ค่าเริ่มต้น SafetyBuffer ≈ 1.08)</p>
+      </div>
+      <div class="formula">
+        <h4>% การลดอาหารเหลือ (ติดตามผล)</h4>
+        <div class="eq">WasteReduction% = (Baseline − New) / Baseline × 100</div>
+        <p>ใช้ทำอะไร: เทียบกับช่วงก่อนปรับแผนว่าเหลือน้อยลงไหม</p>
+      </div>
+
+      <h3>C) เส้นทาง 2 — ดูคุณสมบัติของกองอาหารเหลือ</h3>
+      <div class="formula">
+        <h4>สัดส่วนรายชนิด</h4>
+        <div class="eq">Shareᵢ = (Wᵢ / W) × 100</div>
+      </div>
+      <div class="formula">
+        <h4>ส่วนแห้ง / น้ำ / คาร์บอน / ไนโตรเจน</h4>
+        <div class="eq">DMᵢ = Wᵢ × (1 − Mᵢ)</div>
+        <div class="eq">Waterᵢ = Wᵢ − DMᵢ</div>
+        <div class="eq">Cᵢ = DMᵢ × CarbonFractionᵢ</div>
+        <div class="eq">Nᵢ = DMᵢ × NitrogenFractionᵢ</div>
+        <p>M, CarbonFraction, NitrogenFraction มาจากตารางอ้างอิงของแต่ละชนิดอาหาร</p>
+      </div>
+      <div class="formula">
+        <h4>C:N และความชื้นรวมของกอง</h4>
+        <div class="eq">C:N = ΣC / ΣN</div>
+        <div class="eq">Mmix = Σ(Wᵢ × Mᵢ) / Σ Wᵢ</div>
+        <p>ใช้ทำอะไร: ดูกองชื้นไหม และอัตราส่วนธาตุเหมาะหมักไหมแบบคร่าว ๆ</p>
+      </div>
+      <div class="formula">
+        <h4>กฎตัดสินใจคร่าว ๆ (Decision rules)</h4>
+        <ul>
+          <li>ของแปลกปลอม / อาหารเหลือแข็ง &gt; 2% → <strong>คัดแยกก่อน</strong></li>
+          <li>มีน้ำซุป/น้ำแกง &gt; 0 → <strong>แยกน้ำก่อน</strong></li>
+          <li>C:N ไม่อยู่ในช่วง 20–40 หรือ ความชื้นไม่อยู่ในช่วง 45–65% → <strong>ปรับส่วนผสมก่อนหมัก</strong></li>
+          <li>ผ่านเงื่อนไข → <strong>หมักได้</strong></li>
+          <li>สัดส่วนพืช ≥ 85% → หมายเหตุว่าอาจเหมาะกับปุ๋ยไส้เดือนหลังเตรียมวัตถุดิบ</li>
+        </ul>
+      </div>
+
+      <h3>D) เส้นทาง 3 — ตั้งเป้าแล้วปรับส่วนผสม</h3>
+      <p>เป้าตัวอย่าง: ปุ๋ยหมักแบบมีอากาศ · C:N 25–30 · ความชื้น 50–60%</p>
+      <div class="formula">
+        <h4>ธาตุและความชื้นหลังเติมวัสดุเสริม</h4>
+        <div class="eq">C_added = X × (1 − M_x) × C_x</div>
+        <div class="eq">N_added = X × (1 − M_x) × N_x</div>
+        <div class="eq">CN_new = (C_food + ΣC_added) / (N_food + ΣN_added)</div>
+        <div class="eq">M_new = (W_food·M_food + Σ(X·M_x)) / (W_food + ΣX)</div>
+        <div class="eq">Cost = Σ(X × Price/kg)</div>
+        <p>
+          อินพุต: กองอาหารเหลือเดิม + ปริมาณวัสดุเสริม X (เช่น ใบแห้ง, แกลบ, ฟาง)<br />
+          เอาต์พุต: C:N ใหม่, ความชื้นใหม่, ต้นทุน<br />
+          ใช้ทำอะไร: หาว่าต้องเติมอะไรกี่กิโลถึงเข้าเป้า (ระบบค้นหลายสูตร แล้วเลือกที่ต้นทุนต่ำ / ใช้น้อย)
+        </p>
+      </div>
+
+      <h3>E) จากรูปถาด → แบ่งน้ำหนักรายชนิด (หน้าสแกน)</h3>
+      <div class="formula">
+        <h4>แนวคิดการประมาณ (สรุปสำหรับพรีเซนต์)</h4>
+        <ul>
+          <li>พื้นที่แต่ละชนิดจากภาพ (ตร.ซม.) โดยเทียบกับเส้นผ่านศูนย์กลางถาด</li>
+          <li>สมมติความสูงกองอาหารคร่าว ๆ แล้วถ่วงด้วยความหนาแน่นรายชนิด</li>
+          <li>นำสัดส่วนที่ได้ไปแบ่งน้ำหนักรวมที่ชั่งจริง → ได้กก. ต่อชนิด</li>
+        </ul>
+        <p style="margin:0">น้ำหนักรวมที่ชั่งจริงเชื่อถือได้สูงสุด ส่วนการแบ่งรายชนิดเป็นค่าประมาณจากภาพ</p>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="limits">
+      <h2><span class="num">6</span> ข้อจำกัดที่ควรพูดตอนพรีเซนต์</h2>
+      <ul>
+        <li>ตัวเลขจากรูปเป็นค่าประมาณ ไม่แทนการชั่งแยกรายชนิดทุกอย่าง</li>
+        <li>ค่า “เหลือกี่ %” จะแม่นขึ้นเมื่อมีรูปถาดเต็มมาตรฐานเทียบ (calibrate)</li>
+        <li>เคมีปุ๋ยหมักคิดจากตารางอ้างอิงของอาหารเหลือดิบ — ยังไม่ใช่ปุ๋ยหมักสำเร็จ</li>
+        <li><strong>อย่าเอาอาหารเหลือดิบไปใส่ต้นไม้</strong> ต้องหมักจนเสร็จก่อน</li>
+        <li>“หมักเสร็จ / สุก” หมายถึงกองไม่เหม็นอาหาร ไม่ร้อนจัด และคล้ายดินแล้ว</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>โครงสไลด์แนะนำ (ย่อ)</h2>
+      <ol style="color:var(--muted)">
+        <li>ปัญหาอาหารเหลือในโรงเรียน</li>
+        <li>เป้าหมายโปรเจกต์ (วัด · ลด · ใช้ต่อ)</li>
+        <li>ภาพรวมระบบ (ไม่ลงเทรน AI)</li>
+        <li>เดโมสแกนถาด + หน้าเว็บ</li>
+        <li>เส้นทาง 1: ลดการทำมื้อถัดไป</li>
+        <li>เส้นทาง 2–3: ดูของเหลือ → ตั้งเป้า → ปรับสูตร</li>
+        <li>สูตรสำคัญ 4–6 สูตร (เลือกโชว์)</li>
+        <li>ข้อจำกัด + สิ่งที่จะทำต่อ</li>
+      </ol>
+      <div class="note">
+        <strong>โปสเตอร์:</strong> ใช้บล็อกปัญหา 3 ข้อ + โฟลว์ระบบ 1 แถว + การ์ด 3 เส้นทาง + สูตรเด่น 2–3 สูตร (WasteRate, C:N, RecommendedProduction)
+      </div>
+    </section>
+
+    <footer>
+      Food Waste Lab · เอกสารสรุปสำหรับสไลด์ / พรีเซนต์ / โปสเตอร์ · เปิดไฟล์นี้ในเบราว์เซอร์หรือพิมพ์เป็น PDF ได้
+    </footer>
+  </div>
+</body>
+</html>

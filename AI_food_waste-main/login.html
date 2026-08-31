@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เข้าสู่ระบบ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <div class="login-wrap card">
+        <h1 style="font-size:1.5rem">เข้าสู่ระบบโรงเรียน</h1>
+        <p>ส่วนนี้สำหรับโรงเรียนที่จะเอาไปใช้จริงในโรงอาหาร — รหัสผ่านใส่ได้อะไรก็ได้ (หน้าทดลอง)</p>
+        <form id="login-form">
+          <div class="form-section">
+            <label for="role">บทบาท</label>
+            <select id="role" name="role">
+              <option value="kitchen">เจ้าหน้าที่ครัว</option>
+              <option value="admin">ผู้ดูแลโรงเรียน</option>
+            </select>
+          </div>
+          <div class="form-section">
+            <label for="user">ชื่อผู้ใช้</label>
+            <input type="text" id="user" value="kitchen.demo" autocomplete="username" />
+          </div>
+          <div class="form-section">
+            <label for="pass">รหัสผ่าน</label>
+            <input type="password" id="pass" placeholder="ใส่ได้อะไรก็ได้" autocomplete="current-password" />
+            <p class="field-hint">เข้าแล้วจะเห็นหน้าของโรงเรียน</p>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+        </form>
+        <p class="caption" style="margin-top:1rem">หน้าแรกสาธารณะจะไม่โชว์ชื่อโรงเรียนหรือข้อมูลครัว</p>
+      </div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    FW.initPublicPage("login");
+    if (FW.getAuth()) {
+      window.location.href = "dashboard.html";
+    }
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      FW.ensureDemoSeeded();
+      FW.login(document.getElementById("role").value);
+      window.location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>

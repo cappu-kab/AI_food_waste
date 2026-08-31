@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>หน้าสรุปโรงเรียน — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>หน้าสรุปโรงเรียน</h1>
+          <p class="page-sub"><span data-school-name></span> — ดูตัวเลขสำคัญก่อน สูตรซ่อนไว้ด้านหลัง</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="simple-toggle" checked /> โหมดง่าย</label>
+      </div>
+
+      <div id="content"></div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("dashboard")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    const simpleToggle = document.getElementById("simple-toggle");
+    simpleToggle.checked = FW.isSimpleMode();
+    simpleToggle.addEventListener("change", () => { FW.setSimpleMode(simpleToggle.checked); render(); });
+
+    function render() {
+      const meal = FW.getLatestMeal();
+      const root = document.getElementById("content");
+      if (!meal) {
+        root.innerHTML = FW.emptyState("ยังไม่มีข้อมูลมื้ออาหาร", ["ไปที่หน้าบันทึกครัว", "หรือกดโหลดวันตัวอย่าง"]);
+        return;
+      }
+      const a = F.analyzeMealWaste(meal);
+      const vs = FW_DATA.vsLastWeekPct;
+      const trendCls = vs < 0 ? "trend-down" : "trend-up";
+      const trendArrow = vs < 0 ? "↓" : "↑";
+      const series = FW_DATA.mockWastePerPerson7d.slice();
+      series[6] = Math.round(a.wastePerPerson * 1000); // g
+
+      const top = Object.entries(a.wasteByCategory)
+        .sort((x, y) => y[1] - x[1])
+        .slice(0, 3);
+
+      const simple = FW.isSimpleMode();
+
+      root.innerHTML = `
+        <div class="kpi-grid" style="margin-bottom:1.25rem">
+          <div class="card kpi">
+            <div class="kpi-label">อาหารเหลือวันนี้</div>
+            <div class="kpi-value">${F.roundDisplay(a.wasteTotal, "kg")}<span class="kpi-unit">กก.</span></div>
+            <div class="kpi-meta">${FW.badge("Calculated")} จากที่ไม่ได้เสิร์ฟ + เหลือบนจาน</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">เหลือต่อคน</div>
+            <div class="kpi-value">${Math.round(a.wastePerPerson * 1000)}<span class="kpi-unit">กรัม</span></div>
+            <div class="kpi-meta">${FW.badge("Calculated")}</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">อัตราอาหารเหลือ</div>
+            <div class="kpi-value">${F.roundDisplay(a.wasteRate, "pct")}<span class="kpi-unit">%</span></div>
+            <div class="kpi-meta">${FW.badge("Calculated")}</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">เทียบสัปดาห์ก่อน</div>
+            <div class="kpi-value ${trendCls}">${trendArrow} ${Math.abs(vs)}%</div>
+            <div class="kpi-meta">${FW.badge("Estimated")} ข้อมูลตัวอย่างย้อนหลัง</div>
+          </div>
+        </div>
+
+        <div class="quick-actions" style="margin-bottom:1.25rem">
+          <a href="analysis.html">วิเคราะห์วันนี้</a>
+          <a href="routes.html#step1">ลดอาหารเหลือ</a>
+          <a href="routes.html#step2">ใช้ทางการเกษตร</a>
+          <a href="routes.html#step3">ตั้งเป้าปรับสูตร</a>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>แนวโน้ม 7 วัน (กรัมต่อคน)</h3>
+            <div class="chart-box"><canvas id="trend"></canvas></div>
+            <p class="caption">6 วันแรก = ข้อมูลตัวอย่าง · วันนี้ = คำนวณจากมื้อล่าสุด</p>
+          </div>
+          <div class="card">
+            <h3>วันนี้เหลืออะไรบ้าง</h3>
+            <div class="chart-box"><canvas id="donut"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h3>เหลือมากสุด 3 อันดับ</h3>
+          <ol>${top.map(([k,v]) => `<li><strong>${FW.catLabel(k)}</strong> — ${F.roundDisplay(v,"kg")} กก.</li>`).join("")}</ol>
+        </div>
+
+        ${simple ? "" : `
+        <div class="card">
+          <h3>รายละเอียดเพิ่มเติม</h3>
+          <p class="mono">เตรียม=${a.preparedTotal} กก. · เหลือ=${a.wasteTotal} กก. · คน=${a.diners}
+กินแล้ว=${a.consumed} · อัตราเหลือ=${a.wasteRate}% · ต่อคน=${a.wastePerPerson} กก.</p>
+        </div>`}
+      `;
+
+      new Chart(document.getElementById("trend"), {
+        type: "line",
+        data: {
+          labels: ["D-6","D-5","D-4","D-3","D-2","D-1","วันนี้"],
+          datasets: [{
+            data: series,
+            borderColor: "#1B5E3B",
+            backgroundColor: "rgba(27,94,59,0.1)",
+            fill: true,
+            tension: 0.3,
+          }],
+        },
+        options: { plugins: { legend: { display: false } }, maintainAspectRatio: false },
+      });
+      const cats = Object.keys(a.wasteByCategory);
+      new Chart(document.getElementById("donut"), {
+        type: "doughnut",
+        data: {
+          labels: cats.map(FW.catLabel),
+          datasets: [{ data: cats.map(k => a.wasteByCategory[k]), backgroundColor: FW.chartColors() }],
+        },
+        options: { plugins: { legend: { position: "bottom" } }, maintainAspectRatio: false },
+      });
+    }
+    render();
+  </script>
+</body>
+</html>

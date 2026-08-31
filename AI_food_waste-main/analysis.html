@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>วิเคราะห์อาหารเหลือ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>วิเคราะห์อาหารเหลือ</h1>
+          <p class="page-sub">แยกของแข็ง / น้ำ / ของแปลกปลอม · คำนวณสัดส่วน มวลแห้ง คาร์บอน ไนโตรเจน</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="expert-toggle" /> โหมดละเอียด</label>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("analysis")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    const expert = document.getElementById("expert-toggle");
+    expert.checked = FW.isExpertMode();
+    expert.addEventListener("change", () => { FW.setExpertMode(expert.checked); render(); });
+
+    function render() {
+      const meal = FW.getLatestMeal();
+      const root = document.getElementById("content");
+      if (!meal) {
+        root.innerHTML = FW.emptyState("ข้อมูลยังไม่พอ", ["บันทึกมื้ออาหารในหน้าบันทึกครัวก่อน"]);
+        return;
+      }
+      const a = F.analyzeMealWaste(meal);
+      const chem = F.analyzeCompostChemistry(a.wasteByCategory, FW_DATA.foodMaterials);
+
+      root.innerHTML = `
+        ${FW.lowConfidenceBanner()}
+        <div class="kpi-grid" style="margin-bottom:1rem">
+          <div class="card kpi"><div class="kpi-label">อาหารเหลือแข็ง</div><div class="kpi-value">${F.roundDisplay(a.wasteTotal,"kg")}<span class="kpi-unit">กก.</span></div></div>
+          <div class="card kpi"><div class="kpi-label">ทำแล้วไม่ได้เสิร์ฟ</div><div class="kpi-value">${F.roundDisplay(a.unservedTotal,"kg")}<span class="kpi-unit">กก.</span></div></div>
+          <div class="card kpi"><div class="kpi-label">เหลือบนจาน/ถาด</div><div class="kpi-value">${F.roundDisplay(a.plateTotal,"kg")}<span class="kpi-unit">กก.</span></div></div>
+          <div class="card kpi"><div class="kpi-label">น้ำ / ของแปลกปลอม</div><div class="kpi-value" style="font-size:1.3rem">${a.freeLiquidL} ลิตร / ${F.roundDisplay(a.contaminationTotal,"kg")} กก.</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>องค์ประกอบอาหารเหลือแข็ง</h3>
+            <div class="chart-box"><canvas id="donut"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>เคมีโดยประมาณ ${FW.badge("Calculated")}</h3>
+            <p><strong>C:N</strong> = ${F.roundDisplay(chem.cn,"cn")} · <strong>ความชื้นรวม</strong> = ${F.roundDisplay(chem.mmix*100,"pct")}%</p>
+            <p>คาร์บอนรวม=${F.roundDisplay(chem.ctotal,"kg")} กก. · ไนโตรเจนรวม=${F.roundDisplay(chem.ntotal,"kg")} กก. · มวลแห้ง=${F.roundDisplay(chem.dmTotal,"kg")} กก.</p>
+            <div class="btn-row">
+              <a class="btn btn-primary btn-sm" href="routes.html#step2">ไปเส้นทาง 2</a>
+              <a class="btn btn-outline btn-sm" href="routes.html#step3">ไปเส้นทาง 3</a>
+            </div>
+          </div>
+        </div>
+        <div class="card section">
+          <h3>รายหมวด</h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>หมวด</th><th>น้ำหนัก กก.</th><th>สัดส่วน %</th><th>มวลแห้ง</th><th>น้ำ</th><th>คาร์บอน</th><th>ไนโตรเจน</th></tr></thead>
+            <tbody>
+              ${chem.rows.map(r => `<tr>
+                <td>${FW.catLabel(r.key)}</td>
+                <td>${F.roundDisplay(r.w,"kg")}</td>
+                <td>${F.roundDisplay(r.share,"pct")}</td>
+                <td>${F.roundDisplay(r.dm,"kg")}</td>
+                <td>${F.roundDisplay(r.water,"kg")}</td>
+                <td>${F.roundDisplay(r.c,"kg")}</td>
+                <td>${F.roundDisplay(r.n,"kg")}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table></div>
+          ${FW.isExpertMode() ? chem.rows.map(r => `<p class="mono">Share=${r.key}: ${r.w}/${chem.wtotal}×100; DM=${r.w}×(1-${r.moisture}); C=${r.dm}×${r.carbonFrac}; N=${r.dm}×${r.nitrogenFrac}</p>`).join("") : ""}
+          ${FW.howCalculatedPanel("how-analysis", "วิเคราะห์อาหารเหลือ", [
+            `Wtotal = ${chem.wtotal}`,
+            `Ctotal = ${chem.ctotal}`,
+            `Ntotal = ${chem.ntotal}`,
+            `C:N = Ctotal/Ntotal = ${chem.cn}`,
+            `Mmix = Σ(W×M)/ΣW = ${chem.mmix}`,
+          ])}
+        </div>
+        <p class="disclaimer">ค่า C/N มาจากข้อมูลจากตารางอ้างอิง — เป็นเคมีของอาหารเหลือดิบ ไม่ใช่ปุ๋ยหมักสำเร็จ</p>
+      `;
+
+      new Chart(document.getElementById("donut"), {
+        type: "doughnut",
+        data: {
+          labels: chem.rows.map(r => FW.catLabel(r.key)),
+          datasets: [{ data: chem.rows.map(r => r.w), backgroundColor: FW.chartColors() }],
+        },
+        options: { plugins: { legend: { position: "bottom" } }, maintainAspectRatio: false },
+      });
+    }
+    render();
+  </script>
+</body>
+</html>

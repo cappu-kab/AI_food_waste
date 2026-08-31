@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>สแกนถาดอาหาร — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* สไตล์เฉพาะหน้าสแกน — อิงตัวแปรสีของเว็บหลักเท่าที่มี */
+    .scan-steps{display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
+    .scan-step{display:flex;align-items:center;gap:.5rem;font-size:.88rem;opacity:.6;
+      padding:.4rem .9rem;border-radius:99px;border:1px solid var(--border,#dfe3e8)}
+    .scan-step.on{opacity:1;border-color:var(--brand,#2563eb);color:var(--brand,#2563eb);font-weight:600}
+    .scan-step .n{width:20px;height:20px;border-radius:50%;background:#e6e9ee;
+      display:grid;place-items:center;font-size:.72rem;font-weight:700}
+    .scan-step.on .n{background:var(--brand,#2563eb);color:#fff}
+
+    #drop{border:2px dashed var(--border,#dfe3e8);border-radius:14px;padding:2.6rem 1.2rem;
+      text-align:center;cursor:pointer;transition:.15s}
+    #drop:hover,#drop.over{border-color:var(--brand,#2563eb);background:rgba(37,99,235,.05)}
+    #drop .ico{font-size:2rem}
+    #drop .big{font-size:1.05rem;font-weight:600;margin-top:.5rem}
+    #drop .small{opacity:.7;font-size:.87rem;margin-top:.2rem}
+    .filechip{margin-top:.9rem;font-size:.9rem;opacity:.75;text-align:center}
+    .btnrow{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-top:1.1rem}
+
+    .scan-note{border-radius:11px;padding:.8rem .95rem;margin-bottom:.7rem;font-size:.9rem;
+      border:1px solid #efcc8e;background:#fff6e6;color:#4a3c1e}
+    .scan-note.bad{border-color:#e9a49d;background:#fdeceb;color:#5c211c}
+    .scan-note.good{border-color:#a9d6b8;background:#eaf6ee;color:#1f4a2e}
+    .scan-note .why{display:block;margin-top:.2rem;font-size:.85rem;opacity:.8}
+
+    .scan-result{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,1fr);gap:1.1rem}
+    @media (max-width:900px){.scan-result{grid-template-columns:1fr}}
+    .scan-result img{width:100%;border-radius:11px;display:block}
+    .foods{display:flex;flex-direction:column;gap:.55rem}
+    .food{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;
+      padding:.7rem .8rem;border:1px solid var(--border,#dfe3e8);border-radius:11px}
+    .food.gone{opacity:.5}
+    .dot{width:14px;height:14px;border-radius:5px;border:1px solid rgba(0,0,0,.2)}
+    .fname{font-weight:600}
+    .fsub{font-size:.78rem;opacity:.7}
+    .pct{font-size:1.35rem;font-weight:700;text-align:right}
+    .pctcap{font-size:.72rem;opacity:.65;text-align:right}
+    .fbar{grid-column:1/-1;height:6px;border-radius:4px;background:#e6e9ee;overflow:hidden}
+    .fbar i{display:block;height:100%}
+    .tagp{display:inline-block;font-size:.7rem;padding:1px 8px;border-radius:99px;
+      border:1px solid var(--border,#dfe3e8);opacity:.85;margin-left:.35rem;vertical-align:2px}
+    .tagp.warn{border-color:#efcc8e;color:#9a6200}
+    .tagp.ok{border-color:#a9d6b8;color:#2f7d4a}
+    .traylist{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem}
+    .traytag{display:flex;align-items:center;gap:.5rem;font-size:.85rem;padding:.4rem .7rem;
+      border-radius:9px;border:1px solid var(--border,#dfe3e8)}
+    .traytag .x{cursor:pointer;opacity:.5;font-weight:700}
+    .traytag .x:hover{opacity:1;color:#a92a20}
+    .wIn{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.9rem 0 .3rem}
+    .wIn input{font:inherit;font-size:1.2rem;font-weight:700;padding:.6rem .8rem;width:170px;
+      border-radius:10px;border:1px solid var(--border,#dfe3e8);text-align:right}
+    .hidden{display:none !important}
+    .spin{display:inline-block;width:15px;height:15px;border:2px solid #dfe3e8;
+      border-top-color:var(--brand,#2563eb);border-radius:50%;animation:sp .7s linear infinite;
+      vertical-align:-3px;margin-right:.4rem}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .scan-status{text-align:center;margin:1rem 0;opacity:.75}
+    label.chk{display:flex;gap:.5rem;align-items:flex-start;font-size:.88rem;margin-top:.6rem;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>สแกนถาดอาหาร</h1>
+          <p class="page-sub">ถ่ายรูปถาดจากด้านบน อัปโหลดทีละถาด แล้วให้ระบบแบ่งน้ำหนักอาหารเหลือตามชนิด</p>
+        </div>
+      </div>
+
+      <div class="scan-steps">
+        <div class="scan-step on" id="st1"><span class="n">1</span> อัปโหลดถาด</div>
+        <div class="scan-step" id="st2"><span class="n">2</span> คำนวณน้ำหนักอาหารเหลือ</div>
+      </div>
+
+      <div id="cfgWarn"></div>
+
+      <!-- ขั้น 1 -->
+      <section id="viewUpload">
+        <div class="card">
+          <div id="drop">
+            <div class="ico">📷</div>
+            <div class="big">ลากรูปถาดมาวางตรงนี้ หรือคลิกเพื่อเลือกรูป</div>
+            <div class="small" id="dropHint">ถ่ายจากด้านบนให้เห็นถาดทั้งใบ · jpg หรือ png</div>
+            <input type="file" id="file" accept="image/*" hidden />
+          </div>
+          <div class="filechip" id="filechip"></div>
+          <div class="btnrow">
+            <button type="button" class="btn btn-primary" id="uploadBtn" disabled>อัปโหลด</button>
+            <button type="button" class="btn btn-secondary hidden" id="demoBtn">ลองด้วยรูปตัวอย่าง</button>
+          </div>
+        </div>
+        <div class="scan-status" id="status"></div>
+        <div id="accBox"></div>
+      </section>
+
+      <!-- ผลถาดล่าสุด -->
+      <section id="viewResult" class="hidden">
+        <div id="latest"></div>
+        <div class="card">
+          <p style="margin:0">เก็บผลไว้แล้ว <strong id="trayCount">0</strong> ถาด</p>
+          <div class="traylist" id="trayList"></div>
+          <div class="btnrow">
+            <button type="button" class="btn btn-secondary" id="addBtn">+ เพิ่มถาด</button>
+            <button type="button" class="btn btn-primary" id="calcBtn">คำนวณน้ำหนักอาหารเหลือ</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ขั้น 2 -->
+      <section id="viewCalc" class="hidden">
+        <div class="card">
+          <h2 style="margin:0 0 .2rem;font-size:1.15rem">ชั่งอาหารเหลือรวมทั้งหมด</h2>
+          <p class="page-sub" style="margin:0">ให้ภารโรงชั่งถังอาหารเหลือรวมของมื้อนี้ แล้วกรอกน้ำหนักลงไป
+            ระบบจะแบ่งว่าน้ำหนักนั้นเป็นอาหารชนิดไหนเท่าไร</p>
+          <div class="wIn">
+            <input type="number" id="totalKg" min="0" step="0.1" placeholder="0.0" inputmode="decimal" />
+            <span style="font-weight:600">กิโลกรัม</span>
+            <button type="button" class="btn btn-primary" id="doCalc">คำนวณ</button>
+          </div>
+          <div id="calcWarn"></div>
+          <div class="btnrow" style="justify-content:flex-start">
+            <button type="button" class="btn btn-secondary" id="backBtn">← กลับไปเพิ่มถาด</button>
+          </div>
+        </div>
+        <div id="calcOut"></div>
+      </section>
+
+      <details style="margin-top:1.2rem">
+        <summary style="cursor:pointer;opacity:.7;font-size:.88rem">ดูรายละเอียดเทคนิค (สำหรับผู้ดูแลระบบ)</summary>
+        <div id="techBox" style="margin-top:.6rem;font-size:.82rem;opacity:.8"></div>
+      </details>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+  (function(){
+    // หน้านี้เป็นหน้าฝั่งโรงเรียน -> ใช้ auth gate + sidebar ชุดเดียวกับหน้าอื่น
+    // (ถ้ายังไม่ล็อกอิน FW จะพาไป login.html เอง เหมือน kitchen.html/dashboard.html)
+    if (!window.FW || !FW.initPrivatePage("scan")) return;
+
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    // หน้านี้เสิร์ฟจาก /site/ แต่ API อยู่ที่ root ของ Flask ตัวเดียวกัน
+    const API = '';
+    let CFG = null, DENSITY = {}, trays = [];
+    try { trays = JSON.parse(sessionStorage.getItem('scanTrays') || '[]'); } catch(e){ trays=[]; }
+    const save = () => { try{ sessionStorage.setItem('scanTrays', JSON.stringify(trays)); }catch(e){} };
+
+    fetch(API+'/api/config').then(r=>r.json()).then(c=>{
+      CFG = c; DENSITY = c.density || {};
+      $('dropHint').textContent = `ถ่ายจากด้านบนให้เห็นถาดทั้งใบ · jpg หรือ png · ไม่เกิน ${c.max_mb} MB`;
+      if(c.has_demo) $('demoBtn').classList.remove('hidden');
+      const w = [];
+      (c.model_problems||[]).forEach(p => w.push(
+        `<div class="scan-note bad"><b>ระบบยังใช้งานไม่ได้</b><span class="why">${esc(p)}</span></div>`));
+      if(!c.calibrated) w.push(`<div class="scan-note"><b>ตัวเลข “เหลือกี่ %” ยังเชื่อไม่ได้เต็มที่</b>
+        <span class="why">ระบบยังไม่รู้ว่า “ถาดเต็ม” หน้าตาเป็นยังไง — ส่วนพื้นที่ (ตร.ซม.) ใช้ได้ตามปกติ</span></div>`);
+      $('cfgWarn').innerHTML = w.join('');
+      $('techBox').innerHTML = `โมเดล: <b>${esc(c.model_path)}</b> · ${c.model_classes.length} class:
+        <b>${esc(c.model_classes.join(', '))}</b> · เทรนจาก: <b>${esc(c.model_trained_on||'-')}</b> ·
+        device: <b>${esc(c.device)}</b> · conf ≥ <b>${c.conf}</b> · ถาด <b>${c.tray_diameter_cm} ซม.</b> ·
+        สูงสมมติ <b>${c.height_cm} ซม.</b> · reference: <b>${esc(c.ref_src)}</b>`;
+      if(trays.length) showResult();
+      const qs = new URLSearchParams(location.search);
+      if(c.has_demo && qs.get('demo')==='1'){ trays=[]; save(); pendingKg = qs.get('kg'); $('demoBtn').click(); }
+    }).catch(()=> {
+      $('cfgWarn').innerHTML = `<div class="scan-note bad"><b>ต่อกับเครื่องประมวลผลไม่ได้</b>
+        <span class="why">ตรวจว่าเปิดระบบสแกนอยู่หรือเปล่า (docker compose up web)</span></div>`;
+    });
+
+    let picked = null, pendingKg = null;
+    const drop=$('drop'), fileInput=$('file'), uploadBtn=$('uploadBtn'), statusEl=$('status');
+    drop.onclick = () => fileInput.click();
+    fileInput.onchange = () => setFile(fileInput.files[0]);
+    ['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));
+    ['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
+    drop.addEventListener('drop', ev=>setFile(ev.dataTransfer.files[0]));
+    function setFile(f){ if(!f) return; picked=f; $('filechip').textContent='เลือกไว้: '+f.name; uploadBtn.disabled=false; }
+
+    uploadBtn.onclick = () => {
+      if(!picked) return;
+      const fd=new FormData(); fd.append('images',picked); fd.append('conf',CFG?CFG.conf:0.25);
+      go(()=>fetch(API+'/api/predict',{method:'POST',body:fd}));
+    };
+    $('demoBtn').onclick = () => go(()=>fetch(API+'/api/demo?conf='+(CFG?CFG.conf:0.25)));
+
+    async function go(doFetch){
+      uploadBtn.disabled=true; statusEl.innerHTML='<span class="spin"></span>กำลังดูรูป...';
+      try{
+        const d = await (await doFetch()).json();
+        if(d.error){ statusEl.innerHTML=`<span style="color:#a92a20">${esc(d.error)}</span>`; return; }
+        d.results.forEach(r=>{ if(!r.error) trays.push(r); });
+        save(); statusEl.textContent=''; picked=null; fileInput.value=''; $('filechip').textContent='';
+        showResult();
+        if(pendingKg){ const kg=pendingKg; pendingKg=null;
+          $('calcBtn').click(); $('totalKg').value=kg; setTimeout(()=>$('doCalc').click(),60); }
+      }catch(err){ statusEl.innerHTML=`<span style="color:#a92a20">ติดต่อเครื่องประมวลผลไม่ได้</span>`; }
+      finally{ uploadBtn.disabled=!picked; }
+    }
+
+    function confWord(v){
+      if(v>=0.75) return {t:'มั่นใจสูง',c:'ok'};
+      if(v>=0.50) return {t:'มั่นใจปานกลาง',c:''};
+      return {t:'มั่นใจน้อย',c:'warn'};
+    }
+    const PILL={empty:{t:'กินหมดแล้ว',c:''},uncertain:null,no_reference:{t:'ยังเทียบ % ไม่ได้',c:'warn'},ok:null};
+
+    function foodRow(c){
+      const p=PILL[c.status], cw=c.instances?confWord(c.confidence):null;
+      const pct=c.percent===null?'—':c.percent.toFixed(0)+'%';
+      const size=c.area_cm2!==null?`${c.area_cm2.toFixed(1)} ตร.ซม.`:'ยังวัดขนาดไม่ได้';
+      const tags=[]; if(p) tags.push(`<span class="tagp ${p.c}">${p.t}</span>`);
+      if(cw) tags.push(`<span class="tagp ${cw.c}">${cw.t}</span>`);
+      return `<div class="food ${c.instances===0?'gone':''}">
+        <i class="dot" style="background:${c.color}"></i>
+        <div><div class="fname">${esc(c.name_th)}${tags.join('')}</div><div class="fsub">${size}</div></div>
+        <div><div class="pct">${pct}</div><div class="pctcap">ของที่ตักมา</div></div>
+        <div class="fbar"><i style="width:${c.percent===null?0:c.percent}%;background:${c.color}"></i></div>
+      </div>`;
+    }
+    function trayCard(r,n){
+      const notes=[];
+      if(!r.has_scale) notes.push(`<div class="scan-note"><b>ถาดนี้ถ่ายใกล้ไป วัดขนาดจริงไม่ได้</b>
+        <span class="why">มองไม่เห็นขอบถาดครบทั้งวง เลยไม่มีอะไรให้เทียบขนาด — แสดงเป็น % แทน</span></div>`);
+      if(r.in_liquid&&r.in_liquid.length) notes.push(`<div class="scan-note"><b>เห็นของเหลือในน้ำซุปด้วย:
+        ${r.in_liquid.map(x=>`${esc(x.name_th)} ${x.n} ชิ้น`).join(' · ')}</b>
+        <span class="why">นับเฉพาะชิ้นที่โผล่พ้นผิวน้ำ</span></div>`);
+      if(r.notice) notes.push(`<div class="scan-note"><b>ไม่พบอาหารในรูปนี้</b>
+        <span class="why">อาจเป็นถาดที่กินหมดแล้วจริง ๆ หรือรูปไม่ชัดพอ</span></div>`);
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.6rem;margin-bottom:.8rem">
+          <h2 style="margin:0;font-size:1.1rem">ถาดที่ ${n}</h2>
+          <span style="font-size:.8rem;opacity:.6;word-break:break-all">${esc(r.filename)}</span></div>
+        <div class="scan-result"><img src="${r.image}" alt="ผลการตรวจถาดที่ ${n}" />
+          <div class="foods">${r.rows.map(foodRow).join('')}</div></div>
+        ${notes.join('')}</div>`;
+    }
+
+    function setStep(n){ $('st1').classList.toggle('on',n===1); $('st2').classList.toggle('on',n===2); }
+    function show(v){ ['viewUpload','viewResult','viewCalc'].forEach(x=>$(x).classList.add('hidden'));
+      $(v).classList.remove('hidden'); setStep(v==='viewCalc'?2:1); window.scrollTo({top:0,behavior:'smooth'}); }
+    function showResult(){ show('viewResult'); $('latest').innerHTML=trayCard(trays[trays.length-1],trays.length); renderList(); }
+    function renderList(){
+      $('trayCount').textContent=trays.length;
+      $('trayList').innerHTML=trays.map((r,i)=>
+        `<span class="traytag"><b>ถาดที่ ${i+1}</b>${r.has_scale?'':' <span class="tagp warn">ไม่มีขนาดจริง</span>'}
+         <span class="x" data-rm="${i}" title="ลบถาดนี้">×</span></span>`).join('');
+      $('calcBtn').disabled=trays.length===0;
+      $('trayList').querySelectorAll('[data-rm]').forEach(el=>el.onclick=()=>{
+        trays.splice(+el.dataset.rm,1); save();
+        if(!trays.length) show('viewUpload'); else { $('latest').innerHTML=trayCard(trays[trays.length-1],trays.length); renderList(); }
+      });
+    }
+    $('addBtn').onclick=()=>{ show('viewUpload'); renderAcc(); };
+    $('calcBtn').onclick=()=>{ show('viewCalc'); prepCalc(); };
+    $('backBtn').onclick=()=>{ trays.length?showResult():show('viewUpload'); };
+    function renderAcc(){
+      $('accBox').innerHTML = trays.length ? `<div class="card"><p style="margin:0">เก็บผลไว้แล้ว
+        <strong>${trays.length}</strong> ถาด</p><div class="btnrow">
+        <button type="button" class="btn btn-primary" id="calcBtn2">คำนวณน้ำหนักอาหารเหลือ</button></div></div>` : '';
+      if($('calcBtn2')) $('calcBtn2').onclick=()=>$('calcBtn').click();
+    }
+    function prepCalc(){
+      const n=trays.filter(t=>!t.has_scale).length; $('calcOut').innerHTML='';
+      $('calcWarn').innerHTML = n ? `<div class="scan-note"><b>มี ${n} ถาด ที่วัดขนาดจริงไม่ได้</b>
+        <span class="why">ถาดพวกนี้ถ่ายใกล้เกินจนไม่เห็นขอบถาด ถ้ารวมเข้ามาสัดส่วนอาจเพี้ยน</span>
+        <label class="chk"><input type="checkbox" id="incNoScale" /><span>รวมถาดที่วัดขนาดไม่ได้ด้วย (ไม่แนะนำ)</span></label></div>` : '';
+    }
+
+    $('doCalc').onclick=()=>{
+      const total=parseFloat($('totalKg').value);
+      if(!(total>0)){ $('calcOut').innerHTML=`<div class="scan-note bad"><b>กรุณากรอกน้ำหนักรวมก่อน</b>
+        <span class="why">ใส่ตัวเลขน้ำหนักอาหารเหลือทั้งหมดที่ชั่งได้ (กิโลกรัม)</span></div>`; return; }
+      const inc=$('incNoScale')&&$('incNoScale').checked;
+      const used=trays.filter(t=>t.has_scale||inc);
+      if(!used.length){ $('calcOut').innerHTML=`<div class="scan-note bad"><b>ไม่มีถาดที่ใช้คำนวณได้</b>
+        <span class="why">ทุกถาดวัดขนาดจริงไม่ได้ — ถ่ายใหม่ให้เห็นถาดทั้งใบ</span></div>`; return; }
+
+      // ถาดโรงเรียนขนาดเท่ากันทุกใบ สเกลจึงตรงกัน -> บวกพื้นที่จริงข้ามถาดได้ตรง ๆ
+      // ใช้พื้นที่จริง ไม่ใช่ % เพราะแต่ละถาดเหลืออาหารไม่เท่ากัน
+      const area={},th={},col={};
+      used.forEach(t=>t.rows.forEach(c=>{ th[c.name]=c.name_th; col[c.name]=c.color;
+        area[c.name]=(area[c.name]||0)+(c.area_cm2!==null?c.area_cm2:0); }));
+      const rel={}; let s=0;
+      Object.keys(area).forEach(k=>{ rel[k]=area[k]*(DENSITY[k]??1); s+=rel[k]; });
+      if(s<=0){ $('calcOut').innerHTML=`<div class="scan-note bad"><b>ยังไม่พบอาหารเหลือในถาดที่เลือก</b>
+        <span class="why">ทุกถาดกินหมดเกลี้ยง เลยไม่มีอะไรให้แบ่งน้ำหนัก</span></div>`; return; }
+
+      const rows=Object.keys(area).map(k=>({name:k,th:th[k],color:col[k],area:area[k],
+        share:rel[k]/s,kg:rel[k]/s*total})).sort((a,b)=>b.kg-a.kg);
+      const top=rows[0];
+      $('calcOut').innerHTML=`<div class="card">
+        <h2 style="margin:0 0 .1rem;font-size:1.15rem">ผลการแบ่งน้ำหนักอาหารเหลือ</h2>
+        <p class="page-sub" style="margin:0 0 .6rem">จาก ${used.length} ถาด · น้ำหนักรวมที่ชั่งได้ ${total.toFixed(2)} กก.</p>
+        <table class="table"><thead><tr><th>ชนิดอาหาร</th><th style="text-align:right">พื้นที่รวม (ตร.ซม.)</th>
+          <th style="text-align:right">น้ำหนัก (กก.)</th><th style="text-align:right">สัดส่วน</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td><i class="dot" style="display:inline-block;background:${r.color};vertical-align:-2px"></i>
+          &nbsp;${esc(r.th)}</td><td style="text-align:right">${r.area.toFixed(1)}</td>
+          <td style="text-align:right;font-weight:700">${r.kg.toFixed(2)}</td>
+          <td style="text-align:right">${(r.share*100).toFixed(1)}%</td></tr>`).join('')}</tbody></table>
+        ${top&&top.kg>0?`<div class="scan-note good" style="margin-top:.9rem">
+          <b>เหลือมากที่สุดคือ ${esc(top.th)} — ${top.kg.toFixed(2)} กก. (${(top.share*100).toFixed(0)}% ของอาหารเหลือทั้งหมด)</b>
+          <span class="why">ลองปรับปริมาณที่ตักหรือวิธีปรุงของเมนูนี้ดู น่าจะลดอาหารเหลือได้มากที่สุด</span></div>`:''}
+        <div class="scan-note" style="margin-top:.7rem">
+          <b>น้ำหนักรวมมาจากการชั่งจริง — ส่วนการแบ่งเป็นแต่ละชนิดเป็นค่าประมาณ</b>
+          <span class="why">ระบบแบ่งโดยดูจากพื้นที่อาหารที่เห็นในรูป แล้วถ่วงตามความหนาแน่นของอาหารแต่ละชนิด
+          (เนื้อหนักกว่าผักที่พื้นที่เท่ากัน) ไม่ได้แยกชั่งทีละชนิดจริง ๆ</span></div>
+        <div class="btnrow"><button type="button" class="btn btn-secondary" id="backBtn2">← กลับไปเพิ่มถาด</button>
+          <button type="button" class="btn btn-secondary" id="resetBtn">เริ่มใหม่ทั้งหมด</button></div></div>`;
+      $('backBtn2').onclick=()=>$('backBtn').click();
+      $('resetBtn').onclick=()=>{ if(!confirm('ล้างผลถาดทั้งหมดแล้วเริ่มรอบใหม่?'))return;
+        trays=[]; save(); $('totalKg').value=''; $('calcOut').innerHTML=''; $('accBox').innerHTML=''; show('viewUpload'); };
+    };
+  })();
+  </script>
+</body>
+</html>

@@ -1,17 +1,29 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
 # OS
 Thumbs.db
 Desktop.ini
 .DS_Store
 
-# Editors / local
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Env / secrets (none used yet, keep safe)
+# Env / secrets
 .env
-.env.*
+.env.local
 
-# Logs
+# Logs / temp
 *.log
+tray-waste-web.zip
+
+# Local training outputs (keep models/best.pt tracked)
+runs/

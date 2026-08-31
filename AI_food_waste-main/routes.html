@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>รายงานอาหารเหลือ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* ป้ายลำดับขั้นหน้าแต่ละส่วน — ให้อ่านเป็นรายงานต่อเนื่อง ไม่ใช่ 3 หน้าแยก */
+    .rstep{display:flex;align-items:center;gap:.7rem;margin:2.2rem 0 .9rem;scroll-margin-top:1rem}
+    .rstep:first-of-type{margin-top:.6rem}
+    .rstep .num{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+      font-weight:700;background:var(--brand,#2f6b3f);color:#fff}
+    .rstep h2{margin:0;font-size:1.2rem}
+    .rstep .sub{margin:.1rem 0 0;font-size:.85rem;opacity:.7}
+    .rjump{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem}
+    .rjump a{font-size:.85rem;padding:.4rem .85rem;border-radius:99px;text-decoration:none;
+      border:1px solid var(--border,#dfe3e8);color:inherit}
+    .rjump a:hover{border-color:var(--brand,#2f6b3f)}
+    .rsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin-bottom:.4rem}
+    .rsum .box{border:1px solid var(--border,#dfe3e8);border-radius:11px;padding:.85rem .95rem}
+    .rsum .lbl{font-size:.78rem;opacity:.7}
+    .rsum .val{font-size:1.45rem;font-weight:700;line-height:1.25}
+    .rsum .unit{font-size:.85rem;font-weight:500;opacity:.75}
+    @media print{ .rjump{display:none} .rstep{break-after:avoid} }
+  </style>
+</head>
+<body>
+  <div class="private-layout">
+    <div id="app-sidebar"></div>
+    <main class="private-main">
+      <div class="page-title-row">
+        <div>
+          <h1>รายงานอาหารเหลือ</h1>
+          <p class="page-sub" id="page-sub">ใช้จริงในโรงอาหาร · ลดตั้งแต่ต้น → ดูของเหลือ → ปรับให้เข้าเป้า</p>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
+          <label class="switch"><input type="checkbox" id="expert-toggle" /> โหมดละเอียด</label>
+          <button type="button" class="btn btn-secondary btn-sm no-print" id="printBtn">พิมพ์ / บันทึก PDF</button>
+        </div>
+      </div>
+      <div class="tabs no-print" id="tabs">
+        <button type="button" class="tab active" data-tab="daily">รายวัน</button>
+        <button type="button" class="tab" data-tab="weekly">รายสัปดาห์</button>
+        <button type="button" class="tab" data-tab="monthly">รายเดือน</button>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!FW.initPrivatePage("routes")) throw new Error("auth");
+    const F = FW_FORMULAS;
+    document.getElementById("printBtn").addEventListener("click", () => window.print());
+    const expert = document.getElementById("expert-toggle");
+    expert.checked = FW.isExpertMode();
+    expert.addEventListener("change", () => { FW.setExpertMode(expert.checked); render(); });
+
+    // state ของเส้นทาง 1 (เดิมอยู่ในหน้า route1) — เก็บไว้ระดับหน้าเพื่อไม่ให้ค่าหายตอน re-render
+    let buffer, expected;
+    // ?period=weekly|monthly — เปิดรายงานช่วงที่ต้องการได้ตรง ๆ (แชร์ลิงก์ / สั่งพิมพ์)
+    const _p = new URLSearchParams(location.search).get("period");
+    let tab = ["daily","weekly","monthly"].includes(_p) ? _p : "daily";
+
+    document.getElementById("tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-tab]");
+      if (!btn || btn.dataset.tab === tab) return;
+      tab = btn.dataset.tab;
+      document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
+      expected = null;   // จำนวนคนของช่วงใหม่ไม่เท่าเดิม ให้ default ใหม่
+      render();
+    });
+
+    const CATS = ["rice", "vegetable", "fruit", "protein", "other"];
+    function filterMeals(meals) {
+      if (tab === "daily") return meals.slice(0, 1);
+      if (tab === "weekly") return meals.slice(0, 7);
+      return meals;
+    }
+    // ยุบหลายมื้อเป็น "มื้อรวม" ทรงเดียวกับมื้อเดี่ยว เพื่อให้สูตรทั้ง 3 ขั้นใช้ต่อได้โดยไม่ต้องแก้สูตร
+    // diners ที่รวมกัน = จำนวน "คน-มื้อ" ของทั้งช่วง (สัปดาห์ = 7 วันรวมกัน)
+    function mergeMeals(meals) {
+      if (meals.length === 1) return meals[0];
+      const zero = () => CATS.reduce((o, k) => (o[k] = 0, o), {});
+      const m = { prepared: zero(), unserved: zero(), plateWaste: zero(),
+                  contamination: { plastic: 0, other: 0 }, freeLiquidL: 0, diners: 0,
+                  date: `${meals[meals.length-1].date} – ${meals[0].date}`,
+                  menuName: `${meals.length} มื้อรวมกัน` };
+      meals.forEach(x => {
+        CATS.forEach(k => {
+          m.prepared[k]   += Number(x.prepared?.[k])   || 0;
+          m.unserved[k]   += Number(x.unserved?.[k])   || 0;
+          m.plateWaste[k] += Number(x.plateWaste?.[k]) || 0;
+        });
+        m.contamination.plastic += Number(x.contamination?.plastic) || 0;
+        m.contamination.other   += Number(x.contamination?.other)   || 0;
+        m.freeLiquidL += Number(x.freeLiquidL) || 0;
+        m.diners      += Number(x.diners) || 0;
+      });
+      return m;
+    }
+
+    function stepHead(n, title, sub) {
+      return `<div class="rstep" id="step${n}"><span class="num">${n === 0 ? "◈" : n}</span>
+        <div><h2>${title}</h2><p class="sub">${sub}</p></div></div>`;
+    }
+
+    /* ---------- ขั้น 1: ลดที่ต้นทาง ---------- */
+    function section1(meal) {
+      const settings = FW.getSettings();
+      if (buffer == null) buffer = settings.safetyBuffer ?? 1.08;
+      if (expected == null) expected = settings.expectedDiners || meal.diners;
+
+      const table = F.sourceReductionTable(meal, {
+        safetyBuffer: Number(buffer),
+        expectedDiners: Number(expected),
+        historicalConsumption: FW_DATA.mockConsumptionPerPerson,
+      });
+      const t = table.total;
+      const tips = table.rows
+        .filter((r) => r.potentialReduction > 0.05)
+        .sort((a, b) => b.potentialReduction - a.potentialReduction)
+        .map((r) => {
+          const cut = F.roundDisplay(r.potentialReduction, "kg");
+          const now = F.roundDisplay(r.currentProduction, "kg");
+          const next = F.roundDisplay(r.recommendedProduction, "kg");
+          return `<li>ควรลด<strong>${FW.catLabel(r.key)}</strong> ประมาณ <strong>${cut} กก.</strong>
+            <span class="tip-sub">(ตอนนี้ทำ ${now} กก. → ลองทำราว ${next} กก.)</span></li>`;
+        });
+      const tipBox = tips.length
+        ? `<div class="card reco-card" style="margin-bottom:1rem">
+            <p class="reco-title">สรุปสั้น ๆ สำหรับมื้อถัดไป</p>
+            <ul class="simple-list tip-list">${tips.join("")}</ul>
+            <p class="caption" style="margin:0.75rem 0 0;font-style:normal">รวมแล้วลดได้ราว <strong>${F.roundDisplay(t.potentialReduction,"kg")} กก.</strong> — เป็นคำแนะนำ ช่วยคิด ไม่ใช่คำสั่ง</p>
+          </div>`
+        : `<div class="banner banner-info">มื้อนี้ใกล้เคียงพอดีแล้ว ไม่มีหมวดที่ควรลดชัดเจน</div>`;
+
+      return { table, html: `
+        ${stepHead(1, "ลดการเหลือตั้งแต่ต้น", "ยังไม่เกี่ยวกับเอาขยะไปใช้ — ขั้นนี้คือทำให้วันถัดไปเหลือน้อยลง")}
+        <div class="card form-grid no-print" style="margin-bottom:1rem">
+          <div><label for="buffer">เผื่อเหลืออีกนิด (ตัวคูณ) ${FW.badge("User Input")}</label>
+            <input type="number" id="buffer" min="1" step="0.01" value="${buffer}" /></div>
+          <div><label for="expected">คาดว่าจะมีคนมากินกี่คน ${FW.badge("User Input")}</label>
+            <input type="number" id="expected" min="1" step="1" value="${expected}" /></div>
+        </div>
+        ${tipBox}
+        <div class="card">
+          <div class="rsum">
+            <div class="box"><div class="lbl">เหลือมื้อนี้</div>
+              <div class="val">${F.roundDisplay(t.waste,"kg")} <span class="unit">กก.</span></div></div>
+            <div class="box"><div class="lbl">เหลือกี่ %</div>
+              <div class="val">${F.roundDisplay(t.wasteRate,"pct")}<span class="unit">%</span></div></div>
+            <div class="box"><div class="lbl">รวมควรทำ</div>
+              <div class="val">${F.roundDisplay(t.recommendedProduction,"kg")} <span class="unit">กก.</span></div></div>
+            <div class="box"><div class="lbl">ลดได้รวม</div>
+              <div class="val">${F.roundDisplay(t.potentialReduction,"kg")} <span class="unit">กก.</span></div></div>
+          </div>
+          <details style="margin-top:1rem">
+            <summary>ดูตารางละเอียดรายชนิด</summary>
+            <div class="table-wrap" style="margin-top:.75rem"><table class="data">
+              <thead><tr><th>ชนิด</th><th>ทำไปแล้ว</th><th>เหลือ</th><th>เหลือ %</th>
+                <th>ควรทำ</th><th>ควรลด</th></tr></thead>
+              <tbody>${table.rows.map(r => `<tr>
+                  <td>${FW.catLabel(r.key)}</td>
+                  <td>${F.roundDisplay(r.currentProduction,"kg")} กก.</td>
+                  <td>${F.roundDisplay(r.waste,"kg")} กก.</td>
+                  <td>${F.roundDisplay(r.wasteRate,"pct")}%</td>
+                  <td>${F.roundDisplay(r.recommendedProduction,"kg")} กก.</td>
+                  <td><strong>${F.roundDisplay(r.potentialReduction,"kg")} กก.</strong></td></tr>`).join("")}</tbody>
+            </table></div>
+          </details>
+          ${FW.howCalculatedPanel("how-r1", "ตัวเลขนี้คิดยังไง", [
+            `อาหารเหลือ = ที่ไม่ได้เสิร์ฟ + เหลือบนจาน = ${t.waste} กก.`,
+            `อัตราเหลือ = เหลือ/เตรียม×100 = ${t.wasteRate}%`,
+            `ควรทำ ≈ จำนวนคนที่คาด × กินต่อคนจากวันเก่า × ตัวคูณเผื่อ = ${t.recommendedProduction} กก.`,
+            `ควรลด = ที่ทำจริง − ที่ควรทำ = ${t.potentialReduction} กก.`,
+          ])}
+        </div>` };
+    }
+
+    const RECO_TH = {
+      "COMPOST CANDIDATE": "พร้อมลองทำปุ๋ยหมัก",
+      "SORT FIRST": "ต้องคัดแยกก่อน",
+      "SEPARATE LIQUID": "ต้องแยกน้ำก่อน",
+      "ADJUST BEFORE COMPOST": "ต้องปรับส่วนผสมก่อนหมัก",
+    };
+
+    /* ---------- ขั้น 2: ใช้ทางการเกษตร ---------- */
+    function section2(a, chem) {
+      const decision = F.decisionEngine({
+        contaminationTotal: a.contaminationTotal, solidWaste: a.wasteTotal,
+        freeLiquidL: a.freeLiquidL, cn: chem.cn, mmix: chem.mmix, plantFraction: chem.plantFraction,
+      });
+      return { decision, html: `
+        ${stepHead(2, "ดูของเหลือที่มีอยู่", "ขั้นที่ 1 ของการใช้ขยะต่อ — ชื้นไหม ค่าธาตุเท่าไร เหมาะทำอะไร")}
+        <div class="card reco-card ${decision.status}" style="margin-bottom:1rem">
+          <p class="reco-title">${RECO_TH[decision.recommendation] || decision.recommendation}</p>
+          ${decision.vermiNote ? `<p><strong>${decision.vermiNote}</strong></p>` : ""}
+          <div class="grid-2" style="margin-top:0.75rem">
+            <div class="box"><div class="lbl">ความชื้นตอนนี้</div>
+              <div class="val" style="font-size:1.35rem">${F.roundDisplay(decision.currentMoisture*100,"pct")}<span class="unit">%</span></div></div>
+            <div class="box"><div class="lbl">อัตราส่วนธาตุ (C:N)</div>
+              <div class="val" style="font-size:1.35rem">${F.roundDisplay(decision.currentCN,"cn")}</div></div>
+          </div>
+          <h3 style="margin-top:1rem">ทำไมถึงสรุปแบบนี้</h3>
+          <ul class="simple-list">${decision.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+          <h3>ควรเตรียมอะไรก่อน</h3>
+          <ul class="simple-list">${decision.requiredPreparation.map(r => `<li>${r}</li>`).join("")}</ul>
+        </div>
+        <details class="card">
+          <summary><strong>ดูรายละเอียดรายชนิด</strong> (ข้าว ผัก ฯลฯ)</summary>
+          <div class="table-wrap" style="margin-top:.75rem"><table class="data">
+            <thead><tr><th>ชนิด</th><th>น้ำหนัก</th><th>สัดส่วน</th><th>ส่วนแห้ง</th><th>ความชื้น</th></tr></thead>
+            <tbody>${chem.rows.map(r => `<tr>
+                <td>${FW.catLabel(r.key)}</td>
+                <td>${F.roundDisplay(r.w,"kg")} กก.</td>
+                <td>${F.roundDisplay(r.share,"pct")}%</td>
+                <td>${F.roundDisplay(r.dm,"kg")} กก.</td>
+                <td>${F.roundDisplay(r.moisture*100,"pct")}%</td></tr>`).join("")}</tbody>
+          </table></div>
+          <p>น้ำซุป <strong>${a.freeLiquidL} ลิตร</strong> และของแปลกปลอม <strong>${F.roundDisplay(a.contaminationTotal,"kg")} กก.</strong> ไม่เอามาคิดกับกองหมัก</p>
+        </details>` };
+    }
+
+    /* ---------- ขั้น 3: เป้าหมาย & ปรับสูตร ---------- */
+    function section3(chem) {
+      const target = FW_DATA.aerobicCompostTarget;
+      const result = F.optimizeAerobicMix({
+        wfood: chem.wtotal, mfood: chem.mmix, cfood: chem.ctotal, nfood: chem.ntotal,
+        target: { cnMin: target.cnMin, cnMax: target.cnMax,
+          moistureMin: target.moistureMin, moistureMax: target.moistureMax },
+        amendments: FW_DATA.amendments, includeStraw: true,
+      });
+      const best = result.best;
+      let body;
+      if (!result.found) {
+        body = `<div class="banner banner-danger">
+          ยังหาส่วนผสมที่เข้าเป้าไม่ได้ (ใบแห้ง 0–30 กก. ทีละ 0.5, แกลบ 0–20 ทีละ 0.5, และฟาง 0–20 ทีละ 1)
+          — ลองแยกน้ำเพิ่ม หรือเติมวัสดุคาร์บอน</div>`;
+      } else {
+        const adds = best.additions.map(x =>
+          `${FW_DATA.amendments[x.key].labelTh}: ${F.roundDisplay(x.x,"kg")} กก.`).join(", ") || "ไม่ต้องเติม (เข้าเป้าแล้ว)";
+        body = `
+          <div class="card reco-card" style="margin-bottom:1rem">
+            <p class="reco-title">ถ้าอยากได้เป้านี้ ควรปรับแบบนี้</p>
+            <p><strong>เป้า:</strong> ${target.nameTh}<br/>
+              ความชื้น ${target.moistureMin*100}–${target.moistureMax*100}% · อัตราส่วนธาตุ ${target.cnMin}–${target.cnMax}</p>
+            <div class="grid-2" style="margin:1rem 0">
+              <div class="box"><div class="lbl">ตอนนี้</div>
+                <p style="margin:0">ชื้น ${F.roundDisplay(chem.mmix*100,"pct")}% · C:N ${F.roundDisplay(chem.cn,"cn")}</p></div>
+              <div class="box"><div class="lbl">หลังปรับ (ประมาณ)</div>
+                <p style="margin:0">ชื้น ${F.roundDisplay(best.moisture*100,"pct")}% · C:N ${F.roundDisplay(best.cn,"cn")}</p></div>
+            </div>
+            <h3>ให้เติม</h3>
+            <p style="font-size:1.05rem;color:var(--ink)">${adds}</p>
+            <p class="caption" style="font-style:normal">ต้นทุนวัสดุเสริมราว <strong>${F.roundDisplay(best.cost,"thb")} บาท</strong></p>
+          </div>`;
+      }
+      return { result, html: `
+        ${stepHead(3, "ตั้งเป้า แล้วปรับของที่มี", "ขั้นที่ 2 ของการใช้ขยะต่อ — อยากได้อะไร → ต้องเติมอะไร")}
+        <div class="card no-print" style="margin-bottom:1rem">
+          <label for="target">เป้าตอนนี้</label>
+          <select id="target" disabled><option selected>ปุ๋ยหมักแบบมีอากาศ — ชื้น 50–60%, C:N 25–30</option></select>
+        </div>
+        ${body}` };
+    }
+
+    /* ---------- ภาพรวม (เดิมคือหน้า Reports) ---------- */
+    function overview(meals, agg, a, chem) {
+      const label = tab === "daily" ? "รายวัน" : tab === "weekly" ? "รายสัปดาห์" : "รายเดือน";
+      const wpp = agg.diners ? agg.waste / agg.diners : NaN;
+      return `
+        ${stepHead(0, `ภาพรวม${label}`, `${meals.length} มื้อ · เหลือเท่าไร หมวดไหนมากสุด`)}
+        <div class="card" style="margin-bottom:1rem">
+          <div class="kpi-grid">
+            <div class="kpi"><div class="kpi-label">อาหารเหลือรวม</div>
+              <div class="kpi-value" style="font-size:1.5rem">${F.roundDisplay(agg.waste,"kg")} กก.</div></div>
+            <div class="kpi"><div class="kpi-label">เหลือต่อคน</div>
+              <div class="kpi-value" style="font-size:1.5rem">${Number.isNaN(wpp)?"—":Math.round(wpp*1000)} กรัม</div></div>
+            <div class="kpi"><div class="kpi-label">อัตราอาหารเหลือ</div>
+              <div class="kpi-value" style="font-size:1.5rem">${F.roundDisplay(a.wasteRate,"pct")}%</div></div>
+            <div class="kpi"><div class="kpi-label">${tab==="daily"?"จำนวนคน":"คน-มื้อ"}</div>
+              <div class="kpi-value" style="font-size:1.5rem">${agg.diners}</div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>เหลือจากครัว vs เหลือบนจาน</h3>
+            <p>ทำแล้วไม่ได้เสิร์ฟ (ครัวทำเกิน): <strong>${F.roundDisplay(a.unservedTotal,"kg")} กก.</strong></p>
+            <p>เหลือบนจาน/ถาด (กินไม่หมด): <strong>${F.roundDisplay(a.plateTotal,"kg")} กก.</strong></p>
+            <p>น้ำซุป/น้ำแกง: <strong>${F.roundDisplay(a.freeLiquidL,"kg")} ลิตร</strong></p>
+            <p>ของแปลกปลอม: <strong>${F.roundDisplay(a.contaminationTotal,"kg")} กก.</strong></p></div>
+          <div class="card"><h3>สัดส่วนตามหมวด</h3>
+            <ul>${Object.entries(a.wasteByCategory).map(([k,v]) =>
+              `<li>${FW.catLabel(k)}: ${F.roundDisplay(v,"kg")} กก. (${F.roundDisplay(F.share(v,a.wasteTotal),"pct")}%)</li>`
+            ).join("")}</ul></div>
+        </div>
+        ${meals.length > 1 ? `<div class="card"><h3>มื้อในรายงาน</h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>วันที่</th><th>เมนู</th><th>จำนวนคน</th><th>เหลือ กก.</th><th>อัตรา %</th><th>กรัม/คน</th></tr></thead>
+            <tbody>${meals.map(m => { const x = F.analyzeMealWaste(m); return `<tr>
+                <td>${m.date}</td><td>${m.menuName||"—"}</td><td>${x.diners}</td>
+                <td>${F.roundDisplay(x.wasteTotal,"kg")}</td>
+                <td>${F.roundDisplay(x.wasteRate,"pct")}</td>
+                <td>${Math.round(x.wastePerPerson*1000)}</td></tr>`; }).join("")}</tbody>
+          </table></div></div>` : ""}`;
+    }
+
+    function render() {
+      const allMeals = FW.getMeals();
+      if (!allMeals.length) {
+        document.getElementById("content").innerHTML =
+          FW.emptyState("ยังไม่มีข้อมูลรายงาน", ["บันทึกมื้อในหน้าบันทึกครัว หรือโหลดวันตัวอย่าง"]);
+        return;
+      }
+      const meals = filterMeals(allMeals);
+      const meal = mergeMeals(meals);
+      const root = document.getElementById("content");
+      // ทุกขั้นใช้ชุดข้อมูลเดียวกัน — คำนวณเคมีครั้งเดียวแล้วส่งต่อ
+      // (เดิม Reports/route2/route3 ต่างคนต่างคำนวณ ทำให้ตัวเลขคนละหน้าไม่ตรงกัน)
+      const a = F.analyzeMealWaste(meal);
+      const chem = F.analyzeCompostChemistry(a.wasteByCategory, FW_DATA.foodMaterials);
+
+      const agg = { waste: a.wasteTotal, diners: a.diners };
+      const s1 = section1(meal), s2 = section2(a, chem), s3 = section3(chem);
+      document.getElementById("page-sub").textContent =
+        `${meal.date || "ล่าสุด"} · ${meals.length} มื้อ · ${a.diners} ${tab==="daily"?"คน":"คน-มื้อ"} · ภาพรวม + เส้นทาง 1–3 ในรายงานเดียว`;
+
+      root.innerHTML = `
+        ${FW.lowConfidenceBanner()}
+        <div class="rjump no-print">
+          <a href="#step0">ภาพรวม</a>
+          <a href="#step1">1 · ลดตั้งแต่ต้น</a>
+          <a href="#step2">2 · ดูของเหลือ</a>
+          <a href="#step3">3 · ตั้งเป้าแล้วปรับ</a>
+        </div>
+        ${overview(meals, agg, a, chem)}${s1.html}${s2.html}${s3.html}
+        <p class="disclaimer">หมายเหตุ: ขั้น 2–3 เป็นค่าประมาณจากตารางอ้างอิง ไม่ใช่ค่าวัดกองหมักจริง
+          และอาหารเหลือดิบยังไม่ใช่ปุ๋ยสำเร็จ อย่าใส่ต้นไม้เลย</p>`;
+
+      document.getElementById("buffer").addEventListener("change", (e) => { buffer = e.target.value; render(); });
+      document.getElementById("expected").addEventListener("change", (e) => { expected = e.target.value; render(); });
+    }
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
+    render();
+  </script>
+</body>
+</html>

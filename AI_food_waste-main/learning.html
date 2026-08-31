@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ศูนย์เรียนรู้ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <div class="page-title-row">
+        <div>
+          <h1>ศูนย์เรียนรู้</h1>
+          <p class="page-sub">อ่านเล่น ๆ ได้ — สำหรับเด็ก ครู และคนในโรงอาหาร</p>
+        </div>
+      </div>
+
+      <nav class="card" style="margin-bottom:1.5rem">
+        <strong>เลือกอ่าน</strong>
+        <div class="btn-row" style="margin-top:0.75rem">
+          <a class="btn btn-sm btn-outline" href="#what">อาหารเหลือคืออะไร</a>
+          <a class="btn btn-sm btn-outline" href="#ai">ถ่ายรูปแล้วรู้อะไร</a>
+          <a class="btn btn-sm btn-outline" href="#compost">ปุ๋ยหมักคร่าว ๆ</a>
+          <a class="btn btn-sm btn-outline" href="#flow">จากถาดถึงดิน</a>
+        </div>
+      </nav>
+
+      <article class="article card" id="what" style="max-width:100%; margin-bottom:1rem">
+        <h2>อาหารเหลือคืออะไร</h2>
+        <p>
+          พูดง่าย ๆ คืออาหารที่ทำมาแล้ว แต่ไม่ได้กินจนหมด
+          ในโรงอาหารมักเหลือจากสองทางนี้:
+        </p>
+        <ul>
+          <li><strong>ทำแล้วไม่ได้ตัก</strong> — ทำเยอะเกิน คนมาน้อยกว่าที่คิด</li>
+          <li><strong>ตักแล้วกินไม่หมด</strong> — เหลือบนถาดหรือจาน</li>
+        </ul>
+        <p>
+          ทางที่ดีที่สุดคือทำให้น้อยลงตั้งแต่แรก
+          เช่น ดูว่าวันก่อนเหลืออะไร แล้ววันรุ่งขึ้นค่อยทำพอดีขึ้น
+          จะดีกว่าทำเยอะ ๆ แล้วค่อยมาจัดการทีหลัง
+        </p>
+        <div class="diagram">ทำอาหาร → ตักเสิร์ฟ → กิน
+         ↘ ทำแล้วไม่ได้ตัก     ↘ เหลือบนถาด
+                    ↓
+              กลายเป็นอาหารเหลือ</div>
+      </article>
+
+      <article class="article card" id="ai" style="max-width:100%; margin-bottom:1rem">
+        <h2>ถ่ายรูปถาดแล้วรู้อะไร</h2>
+        <p>
+          เรายกกล้องถ่ายถาดจากด้านบน คอมพิวเตอร์จะช่วยดูว่าเหลือข้าว ผัก หรือเนื้อ
+          แล้วประมาณว่าเหลือมากน้อยแค่ไหน
+        </p>
+        <div class="pipeline-steps">
+          <span class="step">ถ่ายรูป</span><span class="arrow">→</span>
+          <span class="step">แยกว่ามีอะไร</span><span class="arrow">→</span>
+          <span class="step">ประมาณปริมาณ</span><span class="arrow">→</span>
+          <span class="step">ได้ตัวเลข</span>
+        </div>
+        <p style="margin-top:1rem">
+          ตัวเลขจากรูปเป็นค่าประมาณ ไม่แม่นเท่าการชั่งตาชั่ง
+          เลยควรแยกให้ชัดว่าอันไหนประมาณ อันไหนชั่งจริง อันไหนคนกรอกเอง
+        </p>
+      </article>
+
+      <article class="article card" id="compost" style="max-width:100%; margin-bottom:1rem">
+        <h2>ปุ๋ยหมักคร่าว ๆ</h2>
+        <p>
+          ปุ๋ยหมักคือการเอากองเศษอาหารกับใบไม้มาหมักจนกลายเป็นดินดี
+          สิ่งมีชีวิตเล็ก ๆ ในกองจะกินของพวกนี้ ถ้าให้อาหารพอดี กองก็หมักได้ดี
+        </p>
+        <ul>
+          <li><strong>ของสีน้ำตาล</strong> (ใบแห้ง กระดาษเปล่า) — เหมือนพลังงาน ช่วยให้กองไม่แฉะเกินไป</li>
+          <li><strong>ของสีเขียว</strong> (ผัก เศษอาหาร) — มีสารที่ช่วยให้สิ่งมีชีวิตเล็ก ๆ โต</li>
+          <li><strong>ความชื้น</strong> — เปียกประมาณผ้าหมาด ๆ ไม่แฉะน้ำหยด</li>
+          <li><strong>อากาศ</strong> — กลับกองบ้าง จะได้ไม่เหม็นอับ</li>
+        </ul>
+        <p>
+          คนที่ทำปุ๋ยจริงจังจะดูอัตราส่วนที่เรียกว่า C:N ด้วย
+          แต่สำหรับเริ่มต้น จำแค่ว่า “น้ำตาลกับเขียวผสมกัน + ไม่แฉะ + มีอากาศ” ก็พอ
+        </p>
+      </article>
+
+      <article class="article card" id="flow" style="max-width:100%">
+        <h2>จากถาดถึงดิน ทำยังไง</h2>
+        <div class="pipeline-steps">
+          <span class="step">เก็บอาหารเหลือ</span><span class="arrow">→</span>
+          <span class="step">ดูว่าเหลืออะไร</span><span class="arrow">→</span>
+          <span class="step">ปรับส่วนผสม</span><span class="arrow">→</span>
+          <span class="step">หมัก</span><span class="arrow">→</span>
+          <span class="step">ตรวจว่าหมักเสร็จ</span><span class="arrow">→</span>
+          <span class="step">ใส่ดิน</span>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem;background:var(--bg-elevated)">
+          <h3 style="margin-top:0">“สุก” หรือ “หมักเสร็จ” คืออะไร</h3>
+          <p style="margin-bottom:0.5rem">
+            ไม่ได้แปลว่าสุกเหมือนข้าวสุกนะ
+            หมายถึงกองหมักเปลี่ยนจนไม่เหม็น ไม่ร้อนจัด และดูคล้ายดินแล้ว
+          </p>
+          <ul class="simple-list" style="margin-bottom:0">
+            <li>กลิ่นเหม็นอาหารลดลง กลายเป็นกลิ่นดินมากกว่า</li>
+            <li>กองไม่ร้อนจัดเหมือนตอนเพิ่งหมัก</li>
+            <li>ของเดิมยุ่ยเป็นสีน้ำตาลเข้ม คล้ายดิน</li>
+          </ul>
+          <p style="margin:0.75rem 0 0">
+            ถ้ายังเหม็นอาหาร หรือยังเห็นเศษเดิมชัด ๆ แปลว่ายังไม่เสร็จ ยังไม่ควรเอาไปใส่ต้นไม้
+          </p>
+        </div>
+
+        <div class="banner banner-warn" style="margin-top:1.25rem">
+          <strong>อย่าเอาของดิบไปใส่ต้นไม้เลย</strong><br />
+          อาหารเหลือที่เพิ่งทิ้ง ยังไม่ใช่ปุ๋ย
+          ต้องหมักจนเสร็จก่อน ไม่งั้นต้นไม้อาจเน่าหรือมีกลิ่นเหม็น
+        </div>
+      </article>
+    </main>
+    <footer class="site-footer">Food Waste Lab · ของทดลองใช้ · อาหารเหลือดิบยังไม่ใช่ปุ๋ย</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>FW.initPublicPage("learning");</script>
+</body>
+</html>

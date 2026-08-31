@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ตัวเลขอาหารเหลือ — Food Waste Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="public-layout">
+    <div id="app-nav"></div>
+    <main class="public-main">
+      <div class="page-title-row">
+        <div>
+          <h1>ตัวเลขอาหารเหลือ</h1>
+          <p class="page-sub">ดูปริมาณก่อน แล้วค่อยดูว่าของที่เหลือเอาไปใช้ต่อยังไง</p>
+        </div>
+      </div>
+
+      <div class="banner banner-info">
+        อยากลองใช้จริงในโรงอาหาร → <a href="login.html">เข้าสู่ระบบโรงเรียน</a>
+      </div>
+
+      <!-- 1) ปริมาณก่อน -->
+      <section class="section" style="margin-top:0">
+        <div class="section-head">
+          <div>
+            <h2>ปริมาณตอนนี้เป็นไง</h2>
+            <p class="page-sub">เหลือเท่าไร · เหลืออะไร · แนวโน้มยังไง</p>
+          </div>
+        </div>
+        <div class="kpi-grid" id="kpis" style="margin-bottom:1.25rem"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>เหลืออะไรบ้าง</h3>
+            <div class="chart-box"><canvas id="chart-donut"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>แนวโน้ม 30 วัน (กรัมต่อคน)</h3>
+            <div class="chart-box"><canvas id="chart-line"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h3>แยกตามชนิด (%)</h3>
+          <div class="chart-box"><canvas id="chart-bar"></canvas></div>
+          <div class="comp-chips" id="comp-chips"></div>
+        </div>
+      </section>
+
+      <!-- 2) เอาไปทำอะไรต่อ — แบบการ์ด/มิเตอร์ ไม่ใช่ plain text -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>ของที่เหลือแล้ว เอาไปทำอะไรต่อ</h2>
+            <p class="page-sub">แยกจากการลดการทำอาหารวันถัดไป · ดูเป็น 2 ขั้น</p>
+          </div>
+        </div>
+
+        <div class="flow-track" aria-hidden="true">
+          <span class="flow-dot on">1</span>
+          <span class="flow-line"></span>
+          <span class="flow-dot">2</span>
+        </div>
+
+        <div class="grid-2 route-steps">
+          <article class="card route-panel">
+            <div class="route-panel-head">
+              <span class="howto-num">1</span>
+              <div>
+                <h3>ดูของที่มีอยู่</h3>
+                <p class="page-sub" style="margin:0">ชื้นไหม · ค่าธาตุเท่าไร · เหมาะหมักไหม</p>
+              </div>
+            </div>
+
+            <div class="meter-grid" id="step1-meters"></div>
+            <div class="status-chip" id="step1-status"></div>
+            <div class="chip-row" id="step1-prep"></div>
+          </article>
+
+          <article class="card route-panel">
+            <div class="route-panel-head">
+              <span class="howto-num">2</span>
+              <div>
+                <h3>ตั้งเป้า แล้วปรับ</h3>
+                <p class="page-sub" style="margin:0">อยากได้อะไร → ต้องเติมอะไร</p>
+              </div>
+            </div>
+
+            <div class="target-pill" id="step2-target"></div>
+            <div class="compare-row" id="step2-compare"></div>
+            <div class="add-row" id="step2-adds"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">Food Waste Lab · หน้าสาธารณะสำหรับศึกษาแนวทาง</footer>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    FW.initPublicPage("public");
+    const F = FW_FORMULAS;
+    const k = FW_DATA.publicKpis;
+
+    document.getElementById("kpis").innerHTML = [
+      ["อาหารเหลือที่วัดแล้ว", k.foodWasteAnalyzedKg.toLocaleString(), "กก."],
+      ["จำนวนคนที่มีถาดบันทึกแล้ว", k.studentsWithTrays.toLocaleString(), "คน"],
+      ["เหลือเฉลี่ยต่อคน", String(k.avgWastePerPersonG), "กรัม"],
+    ].map(([l, v, u]) => `
+      <div class="card kpi">
+        <div class="kpi-label">${l}</div>
+        <div class="kpi-value">${v}<span class="kpi-unit">${u}</span></div>
+      </div>`).join("");
+
+    const comp = FW_DATA.publicComposition;
+    const colors = FW.chartColors();
+    document.getElementById("comp-chips").innerHTML = comp.map((c, i) => `
+      <span class="comp-chip" style="--chip:${colors[i % colors.length]}">
+        <i></i>${c.labelTh} ${c.pct}%
+      </span>`).join("");
+
+    new Chart(document.getElementById("chart-donut"), {
+      type: "doughnut",
+      data: {
+        labels: comp.map((c) => c.labelTh),
+        datasets: [{ data: comp.map((c) => c.pct), backgroundColor: colors }],
+      },
+      options: { plugins: { legend: { position: "bottom" } }, maintainAspectRatio: false },
+    });
+    new Chart(document.getElementById("chart-line"), {
+      type: "line",
+      data: {
+        labels: FW_DATA.publicTrend30d.map((_, i) => "วัน " + (i + 1)),
+        datasets: [{
+          label: "กรัม/คน",
+          data: FW_DATA.publicTrend30d,
+          borderColor: "#1B5E3B",
+          backgroundColor: "rgba(27,94,59,0.12)",
+          fill: true,
+          tension: 0.3,
+        }],
+      },
+      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { y: { beginAtZero: false } } },
+    });
+    new Chart(document.getElementById("chart-bar"), {
+      type: "bar",
+      data: {
+        labels: comp.map((c) => c.labelTh),
+        datasets: [{ label: "%", data: comp.map((c) => c.pct), backgroundColor: colors }],
+      },
+      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false },
+    });
+
+    // —— ขั้นใช้ของเหลือต่อ (ตัวอย่างจากมื้อจำลอง) ——
+    const demo = { ...FW_DATA.demoMeal, date: "ตัวอย่าง" };
+    const analyzed = F.analyzeMealWaste(demo);
+    const chem = F.analyzeCompostChemistry(analyzed.wasteByCategory, FW_DATA.foodMaterials);
+    const decision = F.decisionEngine({
+      contaminationTotal: analyzed.contaminationTotal,
+      solidWaste: analyzed.wasteTotal,
+      freeLiquidL: analyzed.freeLiquidL,
+      cn: chem.cn,
+      mmix: chem.mmix,
+      plantFraction: chem.plantFraction,
+    });
+
+    const moistPct = Number(F.roundDisplay(chem.mmix * 100, "pct"));
+    const cnVal = Number(F.roundDisplay(chem.cn, "cn"));
+    // เป้าชื้น 50–60, C:N 25–30 — ใช้เป็นกรอบมิเตอร์
+    function meter(label, value, unit, minGood, maxGood, scaleMax) {
+      const pct = Math.max(0, Math.min(100, (value / scaleMax) * 100));
+      const ok = value >= minGood && value <= maxGood;
+      return `
+        <div class="meter">
+          <div class="meter-top"><span>${label}</span><strong>${value}${unit}</strong></div>
+          <div class="meter-track"><i style="width:${pct}%" class="${ok ? "ok" : "warn"}"></i></div>
+          <div class="meter-range">เป้าคร่าว ๆ ${minGood}–${maxGood}${unit}</div>
+        </div>`;
+    }
+
+    document.getElementById("step1-meters").innerHTML =
+      meter("ความชื้น", moistPct, "%", 45, 65, 100) +
+      meter("อัตราส่วนธาตุ C:N", cnVal, "", 20, 40, 60);
+
+    const RECO = {
+      "COMPOST CANDIDATE": { text: "หมักปุ๋ยได้เลย", cls: "ok" },
+      "SORT FIRST": { text: "คัดแยกของแปลกปลอมก่อน", cls: "warn" },
+      "SEPARATE LIQUID": { text: "แยกน้ำออกก่อน", cls: "warn" },
+      "ADJUST BEFORE COMPOST": { text: "ต้องปรับส่วนผสมก่อนหมัก", cls: "warn" },
+    };
+    const reco = RECO[decision.recommendation] || { text: decision.recommendation, cls: "warn" };
+    document.getElementById("step1-status").innerHTML =
+      `<span class="chip ${reco.cls}">${reco.text}</span>`;
+
+    const prep = (decision.requiredPreparation || []).slice(0, 4);
+    document.getElementById("step1-prep").innerHTML = prep.length
+      ? prep.map((p) => `<span class="chip soft">${p}</span>`).join("")
+      : `<span class="chip soft">ไม่ต้องเตรียมพิเศษเพิ่ม</span>`;
+
+    const target = FW_DATA.aerobicCompostTarget;
+    document.getElementById("step2-target").innerHTML =
+      `<span class="chip soft">เป้า: ${target.nameTh}</span>
+       <span class="chip soft">ชื้น ${target.moistureMin * 100}–${target.moistureMax * 100}%</span>
+       <span class="chip soft">C:N ${target.cnMin}–${target.cnMax}</span>`;
+
+    const opt = F.optimizeAerobicMix({
+      wfood: chem.wtotal, mfood: chem.mmix, cfood: chem.ctotal, nfood: chem.ntotal,
+      target: {
+        cnMin: target.cnMin, cnMax: target.cnMax,
+        moistureMin: target.moistureMin, moistureMax: target.moistureMax,
+      },
+      amendments: FW_DATA.amendments, includeStraw: true,
+    });
+
+    if (opt.found && opt.best) {
+      const afterM = Number(F.roundDisplay(opt.best.moisture * 100, "pct"));
+      const afterCN = Number(F.roundDisplay(opt.best.cn, "cn"));
+      document.getElementById("step2-compare").innerHTML = `
+        <div class="compare-card">
+          <div class="lbl">ตอนนี้</div>
+          <div class="big">${moistPct}% · C:N ${cnVal}</div>
+        </div>
+        <div class="compare-arrow" aria-hidden="true">→</div>
+        <div class="compare-card after">
+          <div class="lbl">หลังปรับ</div>
+          <div class="big">${afterM}% · C:N ${afterCN}</div>
+        </div>`;
+
+      const adds = opt.best.additions.filter((x) => x.x > 0);
+      document.getElementById("step2-adds").innerHTML = adds.length
+        ? `<div class="add-label">ให้เติม</div>` + adds.map((x) => `
+            <div class="add-card">
+              <strong>${FW_DATA.amendments[x.key].labelTh}</strong>
+              <span class="add-amt">${F.roundDisplay(x.x, "kg")} กก.</span>
+            </div>`).join("")
+        : `<div class="add-card ok-add"><strong>เข้าเป้าแล้ว</strong><span>ไม่ต้องเติมอะไรเพิ่ม</span></div>`;
+    } else {
+      document.getElementById("step2-compare").innerHTML =
+        `<div class="compare-card"><div class="lbl">ตอนนี้</div><div class="big">${moistPct}% · C:N ${cnVal}</div></div>`;
+      document.getElementById("step2-adds").innerHTML =
+        `<div class="add-card warn-add"><strong>ยังหาส่วนผสมง่าย ๆ ไม่เจอ</strong><span>ลองปรับละเอียดหลังเข้าสู่ระบบ</span></div>`;
+    }
+  </script>
+</body>
+</html>

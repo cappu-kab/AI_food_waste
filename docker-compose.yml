@@ -1,0 +1,22 @@
+# รันเว็บ:  docker compose up --build
+# แล้วเปิด http://localhost:8899
+services:
+  web:
+    build: .
+    image: tray-waste-web
+    ports:
+      - "${WEB_PORT:-8899}:8899"
+    environment:
+      # โมเดลที่เสิร์ฟ (5 class: rice / vegetable / meat / mixed_dish / liquid)
+      MODEL_PATH: ${MODEL_PATH:-models/best.pt}
+      # ต่ำกว่านี้ถือว่าไม่เจอ — ลดลงถ้าอยากให้จับของจาง ๆ ได้มากขึ้น
+      CONF_THRESHOLD: ${CONF_THRESHOLD:-0.25}
+      SURE_CONF: ${SURE_CONF:-0.60}
+      # หาวงถาดแล้วกรองสิ่งที่อยู่นอกถาดทิ้ง
+      TRAY_CROP: ${TRAY_CROP:-true}
+      TRAY_MIN_OVERLAP: ${TRAY_MIN_OVERLAP:-0.5}
+      # ขนาดถาดจริง ใช้เป็นไม้บรรทัดแปลงพิกเซล -> ตร.ซม. **ต้องตรงกับถาดที่โรงเรียนใช้**
+      TRAY_DIAMETER_CM: ${TRAY_DIAMETER_CM:-35}
+      HEIGHT_ASSUMPTION_CM: ${HEIGHT_ASSUMPTION_CM:-1.0}
+      # cpu = รันได้ทุกเครื่อง · ใส่ 0 เพื่อใช้ GPU ใบแรก (ต้องมี NVIDIA Container Toolkit)
+      DEVICE: ${DEVICE:-cpu}
