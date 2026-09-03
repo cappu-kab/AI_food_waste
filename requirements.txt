@@ -1,5 +1,5 @@
-# สำหรับรันบนเครื่อง (ไม่ใช้ Docker)
+# Hosted/free default: Flask + ONNX (no PyTorch). Local torch optional: pip install ultralytics
 flask>=3.0.0
-ultralytics>=8.0.0
 opencv-python-headless>=4.8.0
 numpy>=1.24.0
+onnxruntime>=1.16.0

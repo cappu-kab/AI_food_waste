@@ -23,6 +23,7 @@ from tray_common import (
     CLASS_COLORS_BGR,
     CLASS_NAMES,
     CLASS_NAMES_TH,
+    ModelInfo,
     class_area_fractions,
     cm2_per_pixel,
     estimate_weight_g,
@@ -46,6 +47,9 @@ from tray_common import (
 )
 from tray_detect import detect_tray_region, draw_tray_circle
 from visualize_prediction import draw_masks, draw_panel
+
+# Prefer ONNX on free hosts (no PyTorch). Set MODEL_RUNTIME=torch to force .pt
+MODEL_RUNTIME = os.environ.get("MODEL_RUNTIME", "onnx").strip().lower()
 
 MAX_UPLOAD_MB = 32
 DISPLAY_MAX_WIDTH = 1400        # ย่อภาพผลลัพธ์ก่อนส่งกลับ เบราว์เซอร์จะได้ไม่อืด
@@ -119,11 +123,14 @@ def analyse(image: np.ndarray, conf: float, show_panel: bool) -> dict:
     region = detect_tray_region(image) if STATE["tray_crop"] else None
     tray = region.crop if region else None
 
-    # ต้องส่ง device ทุกครั้ง ไม่งั้น ultralytics จะเลือก GPU 0 เองตาม default
-    # ทำให้ค่า DEVICE/--device ที่ตั้งไว้ไม่มีผลจริง (log บอกอย่าง แต่รันอีกอย่าง)
-    result = predict_one(
-        STATE["model"], image, conf=conf, imgsz=STATE["imgsz"], device=STATE["device"]
-    )
+    # ONNX path (free-tier) or ultralytics torch path
+    if STATE.get("runtime") == "onnx":
+        result = STATE["model"].predict(image, conf=conf)
+    else:
+        # ต้องส่ง device ทุกครั้ง ไม่งั้น ultralytics จะเลือก GPU 0 เองตาม default
+        result = predict_one(
+            STATE["model"], image, conf=conf, imgsz=STATE["imgsz"], device=STATE["device"]
+        )
     stats = class_area_fractions(result, tray=tray, min_overlap=STATE["min_overlap"])
     reference = STATE["reference"]
 
@@ -354,15 +361,34 @@ def parse_args():
     return p.parse_args()
 
 
+def resolve_runtime_model(args_model: str | None):
+    """Pick ONNX (default) or torch weights for hosted/free memory budgets."""
+    onnx_default = Path("models/best.onnx")
+    if MODEL_RUNTIME == "onnx":
+        if args_model and str(args_model).lower().endswith(".onnx"):
+            path = Path(args_model)
+            if path.exists():
+                return str(path), "argument", "onnx"
+        env = os.environ.get("MODEL_PATH")
+        if env and env.lower().endswith(".onnx") and Path(env).exists():
+            return env, "env MODEL_PATH", "onnx"
+        if onnx_default.exists():
+            return str(onnx_default), "models/best.onnx", "onnx"
+        # fall through to torch if onnx missing
+    path, source = resolve_model_path(args_model)
+    return path, source, "torch"
+
+
 def main():
     args = parse_args()
-    model_path, model_source = resolve_model_path(args.model)
+    model_path, model_source, runtime = resolve_runtime_model(args.model)
     if not model_path:
         raise SystemExit(
             "ยังไม่มีโมเดลให้ใช้ — ทำอย่างใดอย่างหนึ่ง:\n"
             "  1) พิสูจน์ว่า loop ทำงาน : python train_smoke.py\n"
             "  2) เทรนกับข้อมูลจริง     : python train.py\n"
-            "  3) ชี้ไปที่ weight ที่มีอยู่ : MODEL_PATH=path/to/best.pt python webapp.py"
+            "  3) ชี้ไปที่ weight ที่มีอยู่ : MODEL_PATH=path/to/best.pt python webapp.py\n"
+            "  4) หรือ export ONNX: python -c \"from ultralytics import YOLO; YOLO('models/best.pt').export(format='onnx', imgsz=320)\""
         )
     if not Path(model_path).exists():
         raise SystemExit(f"ไม่พบไฟล์โมเดล: {model_path}  (มาจาก {model_source})")
@@ -371,18 +397,36 @@ def main():
 
     STATE["device"] = resolve_device(args.device)
     STATE["model_path"] = model_path
-    STATE["model"] = load_model(model_path)
+    STATE["runtime"] = runtime
+    STATE["imgsz"] = INFER_IMGSZ
+    if runtime == "onnx":
+        from onnx_infer import load_onnx_model
+
+        STATE["model"] = load_onnx_model(model_path, imgsz=INFER_IMGSZ)
+        STATE["info"] = ModelInfo(
+            path=model_path,
+            source=model_source,
+            names={i: n for i, n in enumerate(CLASS_NAMES)},
+            trained_on="dataset_real_split/data.yaml (onnx export of best.pt)",
+            trained_epochs=None,
+            trained_date=None,
+            problems=[],
+            warnings=[],
+            is_project_model=True,
+        )
+    else:
+        STATE["model"] = load_model(model_path)
+        STATE["info"] = inspect_model(STATE["model"], model_path, model_source)
     STATE["reference"], STATE["ref_src"] = load_reference(args.reference)
     STATE["sure_conf"] = resolve_sure_conf(args.sure_conf)
     STATE["conf"] = conf
-    STATE["info"] = inspect_model(STATE["model"], model_path, model_source)
     STATE["tray_crop"] = resolve_tray_crop(False if args.no_tray_crop else None)
     STATE["min_overlap"] = resolve_min_overlap()
-    STATE["imgsz"] = INFER_IMGSZ
 
     # ---- log ตอน start ให้เห็นครบว่าเสิร์ฟอะไรอยู่ จะได้ไม่ต้องเดาเวลาผลออกมา 0 ----
     print("\n[web] กำลังเริ่มเซิร์ฟเวอร์")
     print(format_model_report(STATE["info"]))
+    print(f"  runtime    : {STATE['runtime']}")
     print(f"  device     : {STATE['device']}")
     print(f"  conf       : {conf:.2f}  (จาก {conf_source})")
     print(f"  sure_conf  : {STATE['sure_conf']:.2f}")

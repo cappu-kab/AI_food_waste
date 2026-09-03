@@ -8,7 +8,9 @@ services:
     autoDeployTrigger: commit
     envVars:
       - key: MODEL_PATH
-        value: models/best.pt
+        value: models/best.onnx
+      - key: MODEL_RUNTIME
+        value: onnx
       - key: DEVICE
         value: cpu
       - key: CONF_THRESHOLD
