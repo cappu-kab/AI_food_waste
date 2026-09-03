@@ -27,3 +27,7 @@ tray-waste-web.zip
 
 # Local training outputs (keep models/best.pt tracked)
 runs/
+
+# Deploy staging / local tooling
+.hf-space-stage/
+.vercel/

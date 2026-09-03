@@ -142,6 +142,7 @@
     </main>
   </div>
 
+  <script src="js/config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/formulas.js"></script>
   <script src="js/app.js"></script>
@@ -153,8 +154,8 @@
 
     const $ = id => document.getElementById(id);
     const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    // หน้านี้เสิร์ฟจาก /site/ แต่ API อยู่ที่ root ของ Flask ตัวเดียวกัน
-    const API = '';
+    // Local Flask: same origin. Vercel: Hugging Face Space with real best.pt
+    const API = (window.FW_API_BASE || '').replace(/\/$/, '');
     let CFG = null, DENSITY = {}, trays = [];
     try { trays = JSON.parse(sessionStorage.getItem('scanTrays') || '[]'); } catch(e){ trays=[]; }
     const save = () => { try{ sessionStorage.setItem('scanTrays', JSON.stringify(trays)); }catch(e){} };
@@ -177,8 +178,11 @@
       const qs = new URLSearchParams(location.search);
       if(c.has_demo && qs.get('demo')==='1'){ trays=[]; save(); pendingKg = qs.get('kg'); $('demoBtn').click(); }
     }).catch(()=> {
+      const where = API
+        ? `API: ${esc(API)} — ถ้าเพิ่งเปิด Space อาจยัง build/sleep อยู่ ลองรีเฟรชอีกครั้ง`
+        : 'ตรวจว่าเปิดระบบสแกนอยู่หรือเปล่า (docker compose up web / run-local.bat)';
       $('cfgWarn').innerHTML = `<div class="scan-note bad"><b>ต่อกับเครื่องประมวลผลไม่ได้</b>
-        <span class="why">ตรวจว่าเปิดระบบสแกนอยู่หรือเปล่า (docker compose up web)</span></div>`;
+        <span class="why">${where}</span></div>`;
     });
 
     let picked = null, pendingKg = null;

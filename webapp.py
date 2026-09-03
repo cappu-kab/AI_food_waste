@@ -63,6 +63,23 @@ app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 STATE: dict = {"model": None, "model_path": None, "reference": {}, "ref_src": "", "device": "cpu"}
 
 
+@app.after_request
+def add_cors_headers(response):
+    """Allow the Vercel static site (and local preview) to call /api/* cross-origin."""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
+
+@app.route("/api/predict", methods=["OPTIONS"])
+@app.route("/api/demo", methods=["OPTIONS"])
+@app.route("/api/config", methods=["OPTIONS"])
+@app.route("/api/health", methods=["OPTIONS"])
+def api_cors_preflight():
+    return ("", 204)
+
+
 def encode_jpg(image: np.ndarray) -> str:
     """ndarray -> data URL สำหรับแปะใน <img> ตรง ๆ ไม่ต้องเซฟไฟล์"""
     h, w = image.shape[:2]
@@ -185,6 +202,17 @@ def site(filename: str = "index.html"):
     if not SITE_DIR.is_dir():
         return "ไม่พบโฟลเดอร์เว็บ AI_food_waste-main", 404
     return send_from_directory(SITE_DIR.resolve(), filename)
+
+
+@app.route("/api/health")
+def api_health():
+    """Lightweight readiness check for the hosted ML API."""
+    ok = STATE.get("model") is not None and not (STATE.get("info") and STATE["info"].problems)
+    return jsonify({
+        "ok": bool(ok),
+        "model_path": STATE.get("model_path"),
+        "device": STATE.get("device"),
+    }), (200 if ok else 503)
 
 
 @app.route("/api/config")
