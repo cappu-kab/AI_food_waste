@@ -1,0 +1,14 @@
+.venv
+venv
+.git
+.grok
+.hf-space-stage
+.vercel
+**/__pycache__
+*.pyc
+.env
+.env.local
+runs
+*.log
+tray-waste-web.zip
+node_modules

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ai-food-waste-api
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: MODEL_PATH
+        value: models/best.pt
+      - key: DEVICE
+        value: cpu
+      - key: CONF_THRESHOLD
+        value: "0.25"
+      - key: SURE_CONF
+        value: "0.60"
+      - key: TRAY_CROP
+        value: "true"
+      - key: PYTHONUNBUFFERED
+        value: "1"

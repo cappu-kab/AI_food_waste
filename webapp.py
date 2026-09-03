@@ -12,6 +12,7 @@
 
 import argparse
 import base64
+import os
 from pathlib import Path
 
 import cv2
@@ -371,9 +372,11 @@ def main():
     print(f"  reference  : {STATE['ref_src']}")
     print(f"  tray crop  : {'เปิด' if STATE['tray_crop'] else 'ปิด'} "
           f"(min_overlap={STATE['min_overlap']:.2f}) — กรอง detection นอกวงถาดทิ้ง")
-    print(f"  เปิดที่     : http://localhost:{args.port}\n")
+    # Hosted platforms (Render, etc.) inject PORT
+    port = int(os.environ.get("PORT", args.port))
+    print(f"  เปิดที่     : http://localhost:{port}\n")
 
-    app.run(host=args.host, port=args.port, debug=False, threaded=True)
+    app.run(host=args.host, port=port, debug=False, threaded=True)
 
 
 if __name__ == "__main__":
