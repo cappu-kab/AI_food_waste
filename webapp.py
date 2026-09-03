@@ -49,8 +49,11 @@ from visualize_prediction import draw_masks, draw_panel
 
 MAX_UPLOAD_MB = 32
 DISPLAY_MAX_WIDTH = 1400        # ย่อภาพผลลัพธ์ก่อนส่งกลับ เบราว์เซอร์จะได้ไม่อืด
+# Free hosts (Render 512MB) OOM on full-res + imgsz=640; keep real model but smaller tensors
+INFER_MAX_SIDE = int(os.environ.get("INFER_MAX_SIDE", "960"))
+INFER_IMGSZ = int(os.environ.get("INFER_IMGSZ", "416"))
 DEMO_DIR = Path("samples/demo")  # รูปสำหรับปุ่ม "ลองด้วยรูปตัวอย่าง"
-DEMO_LIMIT = 4
+DEMO_LIMIT = int(os.environ.get("DEMO_LIMIT", "2"))
 
 # เว็บ static ของโปรเจกต์ AI Food Waste Lab — เสิร์ฟจาก Flask ตัวเดียวกัน
 # ทำแบบนี้เพื่อให้หน้า scan.html เรียก /api/predict ได้ตรง ๆ โดยไม่ติด CORS
@@ -98,8 +101,19 @@ def bgr_to_hex(bgr) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def shrink_for_infer(image: np.ndarray) -> np.ndarray:
+    """Downscale long side so YOLO fits in small free-tier RAM."""
+    h, w = image.shape[:2]
+    side = max(h, w)
+    if side <= INFER_MAX_SIDE:
+        return image
+    scale = INFER_MAX_SIDE / side
+    return cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
+
 def analyse(image: np.ndarray, conf: float, show_panel: bool) -> dict:
     """รัน 1 ภาพ → คืน dict ที่หน้าเว็บเอาไปแสดงได้เลย"""
+    image = shrink_for_infer(image)
     # หาพื้นที่ทำงานก่อน: ถ้าเห็นถาดเต็มวงจะ crop ตามวง ถ้าถ่ายใกล้จนถาดล้นเฟรม
     # จะถอยไปโหมด full-frame (ไม่กรองอะไรทิ้ง) ดีกว่าเผลอตัด detection ทิ้งหมด
     region = detect_tray_region(image) if STATE["tray_crop"] else None
@@ -107,7 +121,9 @@ def analyse(image: np.ndarray, conf: float, show_panel: bool) -> dict:
 
     # ต้องส่ง device ทุกครั้ง ไม่งั้น ultralytics จะเลือก GPU 0 เองตาม default
     # ทำให้ค่า DEVICE/--device ที่ตั้งไว้ไม่มีผลจริง (log บอกอย่าง แต่รันอีกอย่าง)
-    result = predict_one(STATE["model"], image, conf=conf, device=STATE["device"])
+    result = predict_one(
+        STATE["model"], image, conf=conf, imgsz=STATE["imgsz"], device=STATE["device"]
+    )
     stats = class_area_fractions(result, tray=tray, min_overlap=STATE["min_overlap"])
     reference = STATE["reference"]
 
@@ -362,6 +378,7 @@ def main():
     STATE["info"] = inspect_model(STATE["model"], model_path, model_source)
     STATE["tray_crop"] = resolve_tray_crop(False if args.no_tray_crop else None)
     STATE["min_overlap"] = resolve_min_overlap()
+    STATE["imgsz"] = INFER_IMGSZ
 
     # ---- log ตอน start ให้เห็นครบว่าเสิร์ฟอะไรอยู่ จะได้ไม่ต้องเดาเวลาผลออกมา 0 ----
     print("\n[web] กำลังเริ่มเซิร์ฟเวอร์")
@@ -370,13 +387,16 @@ def main():
     print(f"  conf       : {conf:.2f}  (จาก {conf_source})")
     print(f"  sure_conf  : {STATE['sure_conf']:.2f}")
     print(f"  reference  : {STATE['ref_src']}")
+    print(f"  imgsz      : {STATE['imgsz']}  (max side {INFER_MAX_SIDE})")
     print(f"  tray crop  : {'เปิด' if STATE['tray_crop'] else 'ปิด'} "
           f"(min_overlap={STATE['min_overlap']:.2f}) — กรอง detection นอกวงถาดทิ้ง")
     # Hosted platforms (Render, etc.) inject PORT
     port = int(os.environ.get("PORT", args.port))
     print(f"  เปิดที่     : http://localhost:{port}\n")
 
-    app.run(host=args.host, port=port, debug=False, threaded=True)
+    # Single-threaded on tiny free instances — concurrent YOLO OOMs easily
+    threaded = os.environ.get("FLASK_THREADED", "0") == "1"
+    app.run(host=args.host, port=port, debug=False, threaded=threaded)
 
 
 if __name__ == "__main__":

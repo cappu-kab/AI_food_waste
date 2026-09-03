@@ -31,3 +31,5 @@ runs/
 # Deploy staging / local tooling
 .hf-space-stage/
 .vercel/
+
+.vercel
