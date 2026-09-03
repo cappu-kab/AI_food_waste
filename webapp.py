@@ -55,7 +55,7 @@ MAX_UPLOAD_MB = 32
 DISPLAY_MAX_WIDTH = 1400        # ย่อภาพผลลัพธ์ก่อนส่งกลับ เบราว์เซอร์จะได้ไม่อืด
 # Free hosts (Render 512MB) OOM on full-res + imgsz=640; keep real model but smaller tensors
 INFER_MAX_SIDE = int(os.environ.get("INFER_MAX_SIDE", "960"))
-INFER_IMGSZ = int(os.environ.get("INFER_IMGSZ", "416"))
+INFER_IMGSZ = int(os.environ.get("INFER_IMGSZ", "320"))
 DEMO_DIR = Path("samples/demo")  # รูปสำหรับปุ่ม "ลองด้วยรูปตัวอย่าง"
 DEMO_LIMIT = int(os.environ.get("DEMO_LIMIT", "2"))
 
